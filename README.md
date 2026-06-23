@@ -50,6 +50,43 @@ FastAPI (src/main.py)
 | `src/utils/text_formatter.py` | USSD 160-char formatting |
 | `tests/` | Route + graph query tests |
 
+## Codebase structure
+
+```
+AgriConnect-Nigeria/
+├── .github/
+│   └── workflows/
+│       └── test.yml                  # CI: pytest on push/PR
+├── config/
+│   ├── settings.py                   # Env-driven config (Pydantic Settings)
+│   └── neo4j_constraints.cypher      # Graph constraints & indexes
+├── data/
+│   ├── raw/
+│   │   ├── iita_rice_guide.json      # IITA rice agronomy facts
+│   │   └── nimet_forecast.json       # NiMet weather forecast facts
+│   └── seed_graph.py                 # Idempotent JSON → Neo4j loader
+├── src/
+│   ├── api/
+│   │   ├── schemas/
+│   │   │   └── telecom.py            # Inbound session payload models
+│   │   └── v1/
+│   │       ├── ussd.py               # USSD webhook controller
+│   │       └── ivr.py                # IVR/voice webhook controller
+│   ├── services/
+│   │   ├── graph_service.py          # Neo4j Cypher queries
+│   │   ├── llm_service.py            # Featherless translation
+│   │   └── voice_service.py          # ElevenLabs TTS + cache
+│   ├── utils/
+│   │   └── text_formatter.py         # USSD 160-char formatting
+│   └── main.py                       # FastAPI app entrypoint
+├── tests/
+│   ├── test_ussd_routes.py           # USSD route tests (mocked graph)
+│   └── test_graph_queries.py         # Graph query tests (self-skip w/o Neo4j)
+├── Dockerfile
+├── requirements.txt
+└── README.md
+```
+
 ## Setup
 
 ```bash
