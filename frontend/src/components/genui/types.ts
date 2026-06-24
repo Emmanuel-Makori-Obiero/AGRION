@@ -29,7 +29,7 @@ export interface ActionAlertBlock {
   message: string;
 }
 
-// ==================== NEW AI BLOCK TYPES ====================
+// ==================== AI BLOCK TYPES ====================
 
 export interface AIPipelineStep {
   status: "idle" | "processing" | "complete";
@@ -98,6 +98,53 @@ export interface MultilingualBlock {
   selectedLanguage: string;
 }
 
+// ==================== VOICE / IVR BLOCK TYPES ====================
+
+export interface IVRPrompt {
+  id: string;
+  language: string;
+  text: string;
+  translation?: string;
+  options?: { key: string; label: string }[];
+}
+
+export interface IVRBlock {
+  type: "ivr";
+  currentPrompt: IVRPrompt;
+  step: number;
+  totalSteps: number;
+  isActive: boolean;
+  callStatus: "idle" | "connecting" | "active" | "ended";
+}
+
+export interface VoiceScriptBlock {
+  type: "voice_script";
+  scripts: {
+    id: string;
+    language: string;
+    text: string;
+    translation: string;
+    type: "welcome" | "language" | "crop" | "region" | "stage" | "advisory" | "goodbye";
+  }[];
+  selectedLanguage: string;
+}
+
+export interface TTSBlock {
+  type: "tts";
+  text: string;
+  language: string;
+  isPlaying: boolean;
+  duration: number; // seconds
+}
+
+export interface STTBlock {
+  type: "stt";
+  isListening: boolean;
+  transcript: string;
+  confidence: number;
+  lastCommand: string;
+}
+
 // Update the GenUIBlock type to include all AI blocks
 export type GenUIBlock = 
   | WeatherBlock 
@@ -107,4 +154,8 @@ export type GenUIBlock =
   | USSDSimulatorBlock 
   | AIChatBlock 
   | GuardrailBlock 
-  | MultilingualBlock;
+  | MultilingualBlock
+  | IVRBlock
+  | VoiceScriptBlock
+  | TTSBlock
+  | STTBlock;
