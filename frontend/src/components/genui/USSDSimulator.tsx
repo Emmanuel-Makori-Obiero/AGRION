@@ -9,8 +9,7 @@ import {
   Send,
   ArrowLeft,
   CheckCircle,
-  RefreshCw,
-  ChevronRight
+  RefreshCw
 } from "lucide-react";
 
 interface Props {
@@ -23,7 +22,6 @@ export function USSDSimulator({ block }: Props) {
   const [selectedCrop, setSelectedCrop] = useState("Maize");
   const [selectedRegion, setSelectedRegion] = useState("Kano");
   const [selectedStage, setSelectedStage] = useState("Pre-planting");
-  const [showAdvisory, setShowAdvisory] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const steps = [
@@ -68,47 +66,6 @@ export function USSDSimulator({ block }: Props) {
     { id: "harvest", name: "Harvest", hausa: "Girbi", yoruba: "Ikore", igbo: "Owuwe", emoji: "🌻" },
   ];
 
-  const getLanguageDisplay = (langCode: string) => {
-    const lang = languages.find(l => l.code === langCode);
-    return lang ? lang.name : "English";
-  };
-
-  const getCropDisplay = (cropId: string, langCode: string) => {
-    const crop = crops.find(c => c.id === cropId);
-    if (!crop) return cropId;
-    const map: Record<string, keyof typeof crop> = {
-      en: "name",
-      ha: "hausa",
-      yo: "yoruba",
-      ig: "igbo"
-    };
-    return crop[map[langCode] as keyof typeof crop] || crop.name;
-  };
-
-  const getRegionDisplay = (regionId: string, langCode: string) => {
-    const region = regions.find(r => r.id === regionId);
-    if (!region) return regionId;
-    const map: Record<string, keyof typeof region> = {
-      en: "name",
-      ha: "hausa",
-      yo: "yoruba",
-      ig: "igbo"
-    };
-    return region[map[langCode] as keyof typeof region] || region.name;
-  };
-
-  const getStageDisplay = (stageId: string, langCode: string) => {
-    const stage = stages.find(s => s.id === stageId);
-    if (!stage) return stageId;
-    const map: Record<string, keyof typeof stage> = {
-      en: "name",
-      ha: "hausa",
-      yo: "yoruba",
-      ig: "igbo"
-    };
-    return stage[map[langCode] as keyof typeof stage] || stage.name;
-  };
-
   const handleStepClick = (index: number) => {
     if (index <= currentStep && !isTransitioning) {
       setIsTransitioning(true);
@@ -135,7 +92,6 @@ export function USSDSimulator({ block }: Props) {
 
   const handleReset = () => {
     setCurrentStep(0);
-    setShowAdvisory(false);
   };
 
   const handleLanguageSelect = (lang: string) => {
@@ -230,7 +186,7 @@ export function USSDSimulator({ block }: Props) {
               <div className="text-xs text-gray-400 -mt-1">{getStepSubtitle()}</div>
             )}
             <div className="grid grid-cols-2 gap-2">
-              {crops.map((crop, idx) => {
+              {crops.map((crop) => {
                 const displayName = crop[lang as keyof typeof crop] || crop.name;
                 return (
                   <button
@@ -425,7 +381,7 @@ export function USSDSimulator({ block }: Props) {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {steps.map((step, index) => (
+          {steps.map((_, index) => (
             <button
               key={index}
               onClick={() => handleStepClick(index)}
