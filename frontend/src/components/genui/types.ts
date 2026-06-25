@@ -145,6 +145,35 @@ export interface STTBlock {
   lastCommand: string;
 }
 
+// ==================== SMS PREVIEW BLOCK TYPES ====================
+
+export interface SMSPreviewTemplate {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+export interface SMSLanguage {
+  code: string;
+  name: string;
+  flag: string;
+}
+
+export interface SMSPreviewBlock {
+  type: "sms_preview";
+  selectedLanguage: string;
+  selectedTemplate: string;
+  templates: SMSPreviewTemplate[];
+  languages: SMSLanguage[];
+  content: Record<string, Record<string, string>>;
+}
+
+// ==================== VISION PIPELINE BLOCK TYPES ====================
+
+export interface VisionPipelineBlock {
+  type: "vision_pipeline";
+}
+
 // Update the GenUIBlock type to include all AI blocks
 export type GenUIBlock = 
   | WeatherBlock 
@@ -158,4 +187,7 @@ export type GenUIBlock =
   | IVRBlock
   | VoiceScriptBlock
   | TTSBlock
-  | STTBlock;
+  | STTBlock
+  | SMSPreviewBlock
+  | VisionPipelineBlock;  // ← ADDED
+  
