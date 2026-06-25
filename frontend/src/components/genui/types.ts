@@ -174,6 +174,12 @@ export interface VisionPipelineBlock {
   type: "vision_pipeline";
 }
 
+// ==================== PRIVACY & CONSENT BLOCK TYPES ====================
+
+export interface PrivacyConsentBlock {
+  type: "privacy_consent";
+}
+
 // Update the GenUIBlock type to include all AI blocks
 export type GenUIBlock = 
   | WeatherBlock 
@@ -189,5 +195,5 @@ export type GenUIBlock =
   | TTSBlock
   | STTBlock
   | SMSPreviewBlock
-  | VisionPipelineBlock;  // ← ADDED
-  
+  | VisionPipelineBlock
+  | PrivacyConsentBlock;

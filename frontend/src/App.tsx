@@ -11,9 +11,9 @@ const mockBlocks = [
     steps: {
       intent: { status: "complete" as const, value: "Kano Maize Pre-planting" },
       neo4j: { status: "complete" as const, value: "5 nodes found" },
-      grounding: { status: "complete" as const, value: "✅ Passed" },
+      grounding: { status: "complete" as const, value: "Passed" },
       featherless: { status: "complete" as const, value: "Advisory generated" },
-      advisory: { status: "complete" as const, value: "✅ Delivered" },
+      advisory: { status: "complete" as const, value: "Delivered" },
     },
     status: "complete" as const,
     latency: 320,
@@ -40,7 +40,7 @@ const mockBlocks = [
       { role: "user" as const, content: "What crop should I plant in Kano?" },
       { role: "assistant" as const, content: "Based on NiMet data, maize is recommended for Kano this season. Rains will be late, so wait 2 weeks before planting." },
     ],
-    suggestions: ["🌽 Planting time", "🌧️ Weather forecast", "💰 Finance nudge", "🌾 Crop variety"],
+    suggestions: ["Planting time", "Weather forecast", "Finance nudge", "Crop variety"],
   },
 
   // 4. Hallucination Guardrail
@@ -161,6 +161,11 @@ const mockBlocks = [
   // 10. Vision Pipeline
   {
     type: "vision_pipeline" as const,
+  },
+
+  // 11. Privacy and Consent
+  {
+    type: "privacy_consent" as const,
   },
 ];
 

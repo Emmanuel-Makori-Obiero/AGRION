@@ -11,7 +11,8 @@ import { IVRSimulator } from "./IVRSimulator";
 import { VoiceScript } from "./VoiceScript";
 import { TTSOutput } from "./TTSOutput";
 import { SMSPreview } from "./SMSPreview";
-import { VisionPipeline } from "./VisionPipeline";  // ← ADDED
+import { VisionPipeline } from "./VisionPipeline";
+import { PrivacyConsent } from "./PrivacyConsent";
 
 /**
  * Renders a single AI block by dispatching on its discriminator. New block
@@ -43,8 +44,10 @@ export function GenUIRenderer({ block }: { block: GenUIBlock }) {
       return <TTSOutput block={block} />;
     case "sms_preview":
       return <SMSPreview block={block} />;
-    case "vision_pipeline":  // ← ADDED
+    case "vision_pipeline":
       return <VisionPipeline block={block} />;
+    case "privacy_consent":
+      return <PrivacyConsent block={block} />;
     case "stt":
       // STT (speech-to-text) blocks don't use the TTSOutput component.
       // Return null for now to avoid type mismatches; add a dedicated
