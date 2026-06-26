@@ -131,6 +131,6 @@ async def channel_formatter(state: FarmerState) -> dict:
         HumanMessage(content=f"Expert answer to reformat:\n{reasoning}"),
     ]
 
-    response = await get_chat_model(temperature=0.3).ainvoke(messages)
+    response = await get_chat_model(temperature=0.3, max_tokens=256).ainvoke(messages)
     final = fit_to_channel(response.content, channel)
     return {"final_ui_response": final}

@@ -10,6 +10,12 @@ python-multipart>=0.0.9
 opencv-python-headless>=4.9.0
 numpy>=1.26.0
 
+# Optional, config-gated externalised state (voice bridge at scale):
+#   set REDIS_URL to use Redis for voice-session state
+#   set AUDIO_S3_BUCKET to publish synthesised audio to S3
+redis>=5.0.0
+boto3>=1.34.0
+
 # LangGraph agent (multi-channel)
 langgraph>=0.2.40
 langgraph-checkpoint-sqlite>=2.0.0

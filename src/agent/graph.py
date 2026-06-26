@@ -1,8 +1,11 @@
-"""Graph assembly: intake → router → expert → formatter.
+"""Graph assembly: triage → expert → formatter.
 
 `build_graph` compiles the workflow against a checkpointer. `run_turn` is a thin
 helper the API layer uses to invoke the graph with the phone number as the
 thread id and return the formatted, user-facing string.
+
+Triage merges the former intake + router nodes into one LLM call, so the turn
+costs three model calls (triage, expert, formatter) instead of four.
 """
 
 from __future__ import annotations
@@ -20,8 +23,7 @@ from src.agent.nodes.experts import (
     finance_expert,
 )
 from src.agent.nodes.formatter import channel_formatter
-from src.agent.nodes.intake import intake_node
-from src.agent.nodes.router import route_by_intent, router_node
+from src.agent.nodes.triage import route_by_intent, triage_node
 from src.agent.state import ChannelType, FarmerState, initial_state
 
 logger = logging.getLogger(__name__)
@@ -31,19 +33,17 @@ def build_graph(checkpointer) -> CompiledStateGraph:
     """Wire and compile the multi-channel agent graph."""
     builder = StateGraph(FarmerState)
 
-    builder.add_node("intake", intake_node)
-    builder.add_node("router", router_node)
+    builder.add_node("triage", triage_node)
     builder.add_node("agronomy", agronomy_expert)
     builder.add_node("climate", climate_expert)
     builder.add_node("finance", finance_expert)
     builder.add_node("formatter", channel_formatter)
 
-    builder.add_edge(START, "intake")
-    builder.add_edge("intake", "router")
+    builder.add_edge(START, "triage")
 
-    # Router writes domain_intent; this edge fans out to the matching expert.
+    # Triage writes domain_intent; this edge fans out to the matching expert.
     builder.add_conditional_edges(
-        "router",
+        "triage",
         route_by_intent,
         {
             "agronomy": "agronomy",

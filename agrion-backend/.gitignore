@@ -4,3 +4,6 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
+
+# Runtime SMS outbox — operational data / hashed-PII, not for VCS
+sms_outbox.json

@@ -127,7 +127,7 @@ async def agronomy_expert(state: FarmerState) -> dict:
         ),
     ]
 
-    response = await get_chat_model(temperature=0.2).ainvoke(messages)
+    response = await get_chat_model(temperature=0.2, max_tokens=512).ainvoke(messages)
     return {"expert_reasoning": response.content.strip()}
 
 
@@ -166,7 +166,7 @@ async def climate_expert(state: FarmerState) -> dict:
             )
         ),
     ]
-    response = await get_chat_model(temperature=0.2).ainvoke(messages)
+    response = await get_chat_model(temperature=0.2, max_tokens=512).ainvoke(messages)
     return {"expert_reasoning": response.content.strip()}
 
 
@@ -187,5 +187,5 @@ async def finance_expert(state: FarmerState) -> dict:
             )
         ),
     ]
-    response = await get_chat_model(temperature=0.2).ainvoke(messages)
+    response = await get_chat_model(temperature=0.2, max_tokens=512).ainvoke(messages)
     return {"expert_reasoning": response.content.strip()}

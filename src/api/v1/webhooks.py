@@ -13,15 +13,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from urllib.parse import urljoin
 
 import httpx
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
 from config.settings import get_settings
 from src.agent.graph import run_turn
+from src.services.consent import ensure_consent
 from src.services.graph_service import graph_service
+from src.services.identity import hash_phone
+from src.utils.net_guard import UnsafeURLError, assert_safe_url, verify_telephony_caller
 from src.vision import Diagnosis, VisionStatus, diagnose_image
 from src.vision.sms import FALLBACK_ERROR
 
@@ -29,10 +33,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Cap on downloaded media to bound memory and block decompression bombs.
+_MAX_MEDIA_BYTES = 10 * 1024 * 1024
+
 # Sent when an MMS arrives with no usable image attachment.
 NO_MEDIA_MSG = (
     "No photo found in your message. Please send one clear, close-up photo of "
     "the affected plant."
+)
+
+# Returned when the agent can't answer within the USSD session budget.
+USSD_TIMEOUT_FALLBACK = (
+    "Sorry, this is taking too long. Please dial again, or send your "
+    "question by SMS."
 )
 
 
@@ -42,20 +55,37 @@ def _graph(request: Request):
 
 
 async def _fetch_media(url: str) -> bytes:
-    """Download the MMS attachment, using Twilio basic-auth when configured.
+    """Download an MMS attachment safely.
 
-    Twilio media URLs require AccountSid/AuthToken basic auth; Africa's Talking
-    and other public/signed URLs do not, so auth is applied only when set.
+    SSRF-hardened: every hop (including redirects, which Twilio media URLs use)
+    is validated against the allowlist and the public-IP guard before we fetch
+    it, redirects are followed manually so a 30x can't bypass the check, and
+    credentials are dropped after the first hop. Oversized bodies are rejected.
+
+    Twilio media URLs require AccountSid/AuthToken basic auth; other
+    public/signed URLs do not, so auth is applied only on the first request.
     """
     settings = get_settings()
     auth: tuple[str, str] | None = None
     if settings.twilio_account_sid and settings.twilio_auth_token:
         auth = (settings.twilio_account_sid, settings.twilio_auth_token)
 
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-        resp = await client.get(url, auth=auth)
-        resp.raise_for_status()
-        return resp.content
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=False) as client:
+        for _ in range(4):
+            await assert_safe_url(url)
+            resp = await client.get(url, auth=auth)
+            if resp.is_redirect:
+                location = resp.headers.get("location")
+                if not location:
+                    raise UnsafeURLError("redirect without location")
+                url = urljoin(str(resp.request.url), location)
+                auth = None  # never forward credentials to a redirect target
+                continue
+            resp.raise_for_status()
+            if len(resp.content) > _MAX_MEDIA_BYTES:
+                raise UnsafeURLError("media exceeds size limit")
+            return resp.content
+    raise UnsafeURLError("too many redirects")
 
 
 async def _persist_diagnosis(phone: str, diagnosis: Diagnosis) -> None:
@@ -83,23 +113,41 @@ async def _persist_diagnosis(phone: str, diagnosis: Diagnosis) -> None:
 # --------------------------------------------------------------------------- #
 # USSD — Africa's Talking form POST. Response must be a 'CON '/'END ' string.
 # --------------------------------------------------------------------------- #
-@router.post("/webhook/ussd", response_class=PlainTextResponse)
+@router.post(
+    "/webhook/ussd",
+    response_class=PlainTextResponse,
+    dependencies=[Depends(verify_telephony_caller)],
+)
 async def ussd_webhook(
     request: Request,
     sessionId: str = Form(...),
     phoneNumber: str = Form(...),
     text: str = Form(default=""),
 ) -> str:
+    pid = hash_phone(phoneNumber)
+    await ensure_consent(pid, "ussd")
+
     # The latest '*'-delimited segment is the farmer's most recent entry.
     latest = text.split("*")[-1].strip() if text else ""
     user_input = latest or "I need farming advice"
 
-    answer = await run_turn(
-        _graph(request),
-        phone_number=phoneNumber,
-        user_input=user_input,
-        channel_type="ussd",
-    )
+    # Bound the agent turn: USSD sessions die if the gateway waits too long, so
+    # we return a deterministic fallback rather than risk a timeout on the wire.
+    timeout = get_settings().ussd_agent_timeout
+    try:
+        answer = await asyncio.wait_for(
+            run_turn(
+                _graph(request),
+                phone_number=pid,
+                user_input=user_input,
+                channel_type="ussd",
+            ),
+            timeout=timeout,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("ussd: agent exceeded %ss; returning fallback", timeout)
+        return f"END {USSD_TIMEOUT_FALLBACK}"
+
     # 'END ' terminates the session with the formatted menu/answer.
     return f"END {answer}"
 
@@ -107,7 +155,7 @@ async def ussd_webhook(
 # --------------------------------------------------------------------------- #
 # SMS — Africa's Talking / Twilio form POST. Return plain text (or TwiML).
 # --------------------------------------------------------------------------- #
-@router.post("/webhook/sms")
+@router.post("/webhook/sms", dependencies=[Depends(verify_telephony_caller)])
 async def sms_webhook(
     request: Request,
     # Africa's Talking uses 'from'/'text'; Twilio uses 'From'/'Body'.
@@ -121,9 +169,11 @@ async def sms_webhook(
     if not phone:
         return PlainTextResponse("Missing sender number", status_code=400)
 
+    pid = hash_phone(phone)
+    await ensure_consent(pid, "sms")
     answer = await run_turn(
         _graph(request),
-        phone_number=phone,
+        phone_number=pid,
         user_input=message or "I need farming advice",
         channel_type="sms",
     )
@@ -138,7 +188,7 @@ async def sms_webhook(
 # MMS — inbound picture message. Providers post a media URL, not the bytes, so
 # we download the image, run the vision-diagnostics pipeline, and reply by SMS.
 # --------------------------------------------------------------------------- #
-@router.post("/webhook/mms")
+@router.post("/webhook/mms", dependencies=[Depends(verify_telephony_caller)])
 async def mms_webhook(
     request: Request,
     # Africa's Talking uses 'from'/'mediaUrl'; Twilio uses 'From'/'MediaUrl0'.
@@ -154,19 +204,22 @@ async def mms_webhook(
     if not media_url:
         return PlainTextResponse(NO_MEDIA_MSG)
 
+    pid = hash_phone(phone)
+    await ensure_consent(pid, "mms")
+
     try:
         image_bytes = await _fetch_media(media_url)
-    except httpx.HTTPError as exc:
-        logger.error("mms: media download failed for %s: %s", phone, exc)
+    except (httpx.HTTPError, UnsafeURLError) as exc:
+        logger.error("mms: media download rejected for %s: %s", pid, exc)
         return PlainTextResponse(FALLBACK_ERROR)
 
     result = await diagnose_image(image_bytes)
-    logger.info("mms diagnosis: status=%s phone=%s", result.status.value, phone)
+    logger.info("mms diagnosis: status=%s phone=%s", result.status.value, pid)
 
     # Persist only confident identifications so the graph accumulates real
     # field signal rather than the model's "unknown"/low-confidence guesses.
     if result.status is VisionStatus.OK and result.diagnosis is not None:
-        await _persist_diagnosis(phone, result.diagnosis)
+        await _persist_diagnosis(pid, result.diagnosis)
 
     # Plain text is valid for Africa's Talking. For Twilio, wrap in TwiML:
     #   return Response(f"<Response><Message>{result.sms}</Message></Response>",
@@ -193,7 +246,7 @@ class ChatResponse(BaseModel):
 async def chat_webhook(request: Request, payload: ChatRequest) -> ChatResponse:
     answer = await run_turn(
         _graph(request),
-        phone_number=payload.phone_number,
+        phone_number=hash_phone(payload.phone_number),
         user_input=payload.message,
         channel_type="chatbot",
         preferred_language=payload.preferred_language,

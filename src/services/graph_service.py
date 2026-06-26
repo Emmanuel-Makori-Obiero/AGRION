@@ -102,6 +102,40 @@ class GraphService:
         with self._driver.session(database=self._database) as session:
             session.execute_write(_write)
 
+    def ensure_consent(self, phone_hash: str, channel: str) -> None:
+        """Record a consent grant for a (hashed) farmer if not already present.
+
+        Telephony channels auto-grant on first use — a feature-phone caller has
+        no UI to tick a box — but we still persist an auditable record with the
+        channel and timestamp.
+        """
+
+        def _write(tx) -> None:
+            tx.run(
+                "MERGE (f:Farmer {phone: $phone}) "
+                "ON CREATE SET f.consented = true, "
+                "              f.consent_channel = $channel, "
+                "              f.consent_ts = datetime() "
+                "FOREACH (_ IN CASE WHEN f.consented IS NULL THEN [1] ELSE [] END | "
+                "  SET f.consented = true, f.consent_channel = $channel, "
+                "      f.consent_ts = datetime())",
+                phone=phone_hash,
+                channel=channel,
+            )
+
+        with self._driver.session(database=self._database) as session:
+            session.execute_write(_write)
+
+    def has_consent(self, phone_hash: str) -> bool:
+        """Return whether a (hashed) farmer has a recorded consent grant."""
+        cypher = (
+            "MATCH (f:Farmer {phone: $phone}) "
+            "RETURN coalesce(f.consented, false) AS consented"
+        )
+        with self._driver.session(database=self._database) as session:
+            record = session.run(cypher, phone=phone_hash).single()
+            return bool(record and record["consented"])
+
     def save_diagnosis(
         self,
         *,

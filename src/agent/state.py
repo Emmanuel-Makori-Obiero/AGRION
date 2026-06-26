@@ -24,11 +24,9 @@ class FarmerState(TypedDict):
     user_input: str
     channel_type: ChannelType
 
-    # --- Populated by the intake node ---
+    # --- Populated by the triage node ---
     crop_focus: Optional[str]
     region: Optional[str]  # Nigerian state/region, used to ground forecasts
-
-    # --- Populated by the router node ---
     domain_intent: Optional[DomainIntent]
 
     # --- Populated by the specialist expert nodes ---

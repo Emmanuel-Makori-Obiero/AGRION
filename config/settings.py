@@ -71,6 +71,34 @@ class Settings(BaseSettings):
     # ngrok/CDN host). Falls back to the request's own base URL when blank.
     public_base_url: str = Field(default="")
 
+    # --- Privacy (item 2) ------------------------------------------------ #
+    # Salt for hashing MSISDNs before they touch the graph/checkpointer. Set a
+    # strong, secret value in production (NDPA data-minimisation).
+    phone_hash_salt: str = Field(default="agrion-dev-salt")
+
+    # --- Webhook hardening / SSRF (item 3) ------------------------------- #
+    # Comma-separated domain suffixes the server may fetch media/recordings
+    # from. Empty disables the allowlist (public-IP guard still applies).
+    media_host_allowlist: str = Field(
+        default="africastalking.com,twilio.com,amazonaws.com"
+    )
+    # Comma-separated CIDRs allowed to call the telephony webhooks. Empty
+    # disables IP filtering (logs a warning).
+    telephony_ip_allowlist: str = Field(default="")
+
+    # --- USSD latency guard (item 4) ------------------------------------- #
+    # Hard ceiling on the agent turn for USSD before we return a deterministic
+    # fallback, so a slow LLM never kills the USSD session.
+    ussd_agent_timeout: float = Field(default=8.0)
+
+    # --- Externalised state (item 5) ------------------------------------- #
+    # Redis URL for voice-session state; blank uses an in-process store.
+    redis_url: str = Field(default="")
+    # S3 bucket for synthesised audio; blank serves audio from local disk.
+    audio_s3_bucket: str = Field(default="")
+    audio_s3_region: str = Field(default="us-east-1")
+    audio_s3_public_base: str = Field(default="")  # CDN/base in front of bucket
+
     # Africa's Talking
     at_username: str = Field(default="sandbox")
     at_api_key: str = Field(default="")
