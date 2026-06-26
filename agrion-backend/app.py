@@ -12,9 +12,12 @@ from routes.ussd import ussd_bp
 
 def create_app():
     app = Flask(__name__)
-    app.register_blueprint(ussd_bp)
-    app.register_blueprint(sms_bp)
-    app.register_blueprint(api_bp, url_prefix="/api")
+
+    # Register all route blueprints
+    app.register_blueprint(ussd_bp)          # POST /ussd
+    app.register_blueprint(sms_bp)           # POST /sms
+    app.register_blueprint(api_bp, url_prefix="/api")  # GET|POST /api/*
+
     return app
 
 
@@ -29,4 +32,5 @@ def shutdown_neo4j(exception=None):
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    debug = os.getenv("FLASK_ENV", "production") == "development"
+    app.run(host="0.0.0.0", port=port, debug=debug)

@@ -1,0 +1,38 @@
+{
+  "NUH0DZ": {
+    "phone_hash": "a971099a51c0d367",
+    "advice": "Maize is turning black. It could be due to a disease called maize streak virus (MSV). MSV is a viral disease that affects maize plants and causes t...",
+    "ts": "2026-06-26T12:44:45.034957",
+    "retrieved": false
+  },
+  "L6UYKQ": {
+    "phone_hash": "a971099a51c0d367",
+    "advice": "Cassava mosaic virus can cause blue or purple coloration of the inside of the tuber. You should remove and destroy any affected plants. \ud83e\udd96\n</think>s...",
+    "ts": "2026-06-26T12:47:47.414593",
+    "retrieved": false
+  },
+  "QJXZ64": {
+    "phone_hash": "a971099a51c0d367",
+    "advice": "Crop: rice. Notes: Needs flooded fields; transplant at 21 days; watch for stem borers.. Pests: stem borer.\nQuestion:",
+    "ts": "2026-06-26T13:07:52.958613",
+    "retrieved": false
+  },
+  "Z8B636": {
+    "phone_hash": "a971099a51c0d367",
+    "advice": "The rice is becoming more brown. It is likely that the rice is infected with stem borer. You should check the rice for stem borer and treat it with...",
+    "ts": "2026-06-26T13:12:58.214584",
+    "retrieved": false
+  },
+  "1M5US1": {
+    "phone_hash": "a971099a51c0d367",
+    "advice": "Crop: tea. Notes: Detail context for: tea",
+    "ts": "2026-06-26T13:48:48.044435",
+    "retrieved": false
+  },
+  "PTQ9YY": {
+    "phone_hash": "a971099a51c0d367",
+    "advice": "system\nYou are Agrion, an agricultural advisor for smallholder farmers in Nigeria. Answer ONLY the farmer's question in 2 short plain sentences. Do...",
+    "ts": "2026-06-26T14:10:16.468794",
+    "retrieved": true
+  }
+}

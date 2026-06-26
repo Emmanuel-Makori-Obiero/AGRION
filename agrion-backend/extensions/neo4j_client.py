@@ -1,9 +1,6 @@
 """
 Single shared Neo4j AuraDB driver.
-
 run_query() NEVER raises to the caller — returns None if DB is unreachable.
-This keeps the USSD/SMS handlers alive even without Neo4j credentials set
-(graceful degradation: LLM still answers, just without graph context).
 """
 import os
 from neo4j import GraphDatabase
@@ -16,8 +13,8 @@ def get_driver():
     if _driver is not None:
         return _driver
 
-    uri = os.getenv("NEO4J_URI")
-    user = os.getenv("NEO4J_USERNAME")
+    uri      = os.getenv("NEO4J_URI")
+    user     = os.getenv("NEO4J_USERNAME")
     password = os.getenv("NEO4J_PASSWORD")
 
     if not all([uri, user, password]):
@@ -43,13 +40,14 @@ def run_query(query: str, params: dict | None = None, write: bool = False):
         return None
 
     params = params or {}
+
     try:
         with driver.session() as session:
             if write:
-                # FIX: use keyword unpacking correctly — params is passed as a dict
-                result = session.execute_write(lambda tx: list(tx.run(query, parameters_=params)))
+                # FIX: pass params dict directly as second positional arg, not parameters_=
+                result = session.execute_write(lambda tx: list(tx.run(query, params)))
             else:
-                result = session.execute_read(lambda tx: list(tx.run(query, parameters_=params)))
+                result = session.execute_read(lambda tx: list(tx.run(query, params)))
         return [dict(r) for r in result]
     except Exception as e:
         print(f"[neo4j] Query failed: {e}")
@@ -57,7 +55,6 @@ def run_query(query: str, params: dict | None = None, write: bool = False):
 
 
 def close_driver():
-    """Call on app shutdown to release connections."""
     global _driver
     if _driver:
         _driver.close()
