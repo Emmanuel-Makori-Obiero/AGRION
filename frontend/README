@@ -1,0 +1,343 @@
+# AgriConnect Nigeria — Frontend
+
+A comprehensive, offline-accessible agricultural advisory platform designed for Nigerian smallholder farmers. This frontend serves as the complete user interface for the AgriConnect system, supporting both basic phone users (USSD) and smartphone users (web app), with a full judge dashboard showcasing the AI behind the scenes.
+
+---
+
+## Overview
+
+AgriConnect Nigeria bridges the digital divide for Nigerian farmers by providing:
+
+- **USSD Access** — For basic phones, no internet required (`*384#`)
+- **Toll-Free Voice IVR** — For farmers who prefer speaking
+- **Two-Way SMS** — 160-character messages with Agrion Advisory
+- **Web App** — For smartphone users with AI chat and vision pipeline
+- **AI Pipeline** — GraphRAG + Neo4j + Featherless AI for hyper-local advisory
+
+---
+
+## Pages & Features
+
+### 1. Landing Page
+The entry point for all users — introduces the platform and its features.
+
+- Hero Section: "Tech that meets farmers where they are"
+- Features Grid: USSD, Voice, SMS, AI, Vision, Languages
+- NDPA 2023 Compliance: Data protection policy with interactive modal
+- Dark/Light Mode Toggle: Full theme support
+- Navigation: Home, USSD Simulator, Web App, Judge Dashboard
+
+### 2. USSD Simulator
+Demonstrates what farmers experience on basic phones.
+
+- 5 Screens: Language → Crop → Region → Stage → Advisory
+- 5 Languages: English, Hausa, Yoruba, Igbo, Pidgin
+- Clickable Options: Auto-advances through the flow
+- Step Tracker: Shows current progress
+- SMS Inbox: Two-way messaging simulation
+- Voice/IVR: Call simulation with voice prompts and TTS
+
+### 3. Farmer App
+The web alternative for smartphone users.
+
+- AI Chat Assistant: Ask questions, get advisory responses
+- Quick Replies: Planting advice, Weather, Pest control, CashCard
+- Vision Pipeline: Upload crop photos, AI disease detection
+- SMS Inbox: Two-way messaging with Agrion Advisory
+- No Account Needed: Instant access, no sign-up required
+
+### 4. Judge Dashboard
+Shows the AI behind the scenes for technical evaluation.
+
+- AI Pipeline: 5-step GraphRAG visualization
+- Hallucination Guardrail: In-scope vs out-of-scope query handling
+- Voice & IVR: Voice scripts and TTS preview
+- SMS Preview: Template preview with character count
+- Security: Privacy consent and NDPA compliance
+- Tab Filtering: Filter components by category
+
+---
+
+## Design System
+
+### Sandy Serenity Palette
+
+| Color Name | Hex | Usage |
+|------------|-----|-------|
+| Cream Light | `#f1e6b2` | Backgrounds, chips |
+| Gold Sand | `#e2c68a` | Borders, secondary text |
+| Di Serria | `#d4a54e` | USSD text, dark accent |
+| Marigold | `#c48f2b` | Primary accent |
+| Copper | `#a8752f` | Labels, tertiary text |
+| Dallas | `#7a5d2c` | Muted text |
+| Judge Gray | `#4f3f2e` | Dark surfaces, dividers |
+| Thunder | `#2e292b` | Body text |
+
+### Dark Mode
+
+All components support a full dark mode with a black background and warm brown accents.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | React 18 + TypeScript |
+| Build Tool | Vite |
+| Styling | Tailwind CSS |
+| Icons | Lucide React |
+| Fonts | DM Serif Display, Inter, JetBrains Mono |
+| State Management | React useState |
+
+---
+
+## How Lovable Was Used
+
+Lovable was used as a rapid prototyping tool to generate the initial structure and design for the Landing Page. The process was:
+
+1. **Prompt:** Created a detailed prompt describing the AgriConnect Landing Page with Sandy Serenity palette, 5 language support, NDPA compliance section, dark/light mode, and Lucide icons.
+
+2. **Generation:** Lovable generated the initial Landing page component with hero section, features grid, NDPA section, and responsive layout.
+
+3. **Refinement:** The generated code was manually refined to match the exact Sandy Serenity colors, add proper dark mode support, integrate with the existing codebase, add the NDPA modal functionality, and fix text visibility in light mode.
+
+4. **Integration:** The Landing Page was integrated into the main `App.tsx` with the existing navigation system.
+
+---
+
+## Backend Integration
+
+The frontend is designed to connect to a FastAPI backend via RESTful APIs.
+
+### API Endpoints Expected
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/chat` | POST | Send chat messages to Featherless AI |
+| `/api/v1/vision` | POST | Upload crop images for vision analysis |
+| `/api/v1/ussd` | POST | USSD session handling |
+| `/api/v1/sms` | POST | SMS sending and receiving |
+| `/api/v1/ivr` | POST | IVR voice call handling |
+| `/api/v1/genui/demo` | GET | Stream GenUI blocks for the dashboard |
+
+### Data Structure Expected
+
+**Chat Request:**
+```json
+{
+  "message": "When should I plant maize?",
+  "language": "ha",
+  "session_id": "web-001"
+}
+```
+
+**Chat Response:**
+```json
+{
+  "advisory": "Plant maize 2 weeks after the first heavy rain...",
+  "isGrounded": true,
+  "sources": ["NiMet 2026", "IITA Maize Guide"],
+  "language": "ha"
+}
+```
+
+**Vision Request:**
+```json
+{
+  "image": "base64_encoded_image",
+  "language": "en",
+  "notes": "Maize, 6 weeks, yellowing on lower leaves"
+}
+```
+
+**Vision Response:**
+```json
+{
+  "condition": "Maize Streak Virus",
+  "confidence": 87,
+  "advisory": "Remove infected plants. Spray neem oil.",
+  "sms": "AGRION: Likely Maize Streak Virus..."
+}
+```
+
+### GenUI Block Types
+
+The Judge Dashboard renders these block types from the backend:
+
+| Block Type | Component | Purpose |
+|------------|-----------|---------|
+| `ai_pipeline` | `AIPipeline` | 5-step GraphRAG visualization |
+| `guardrail` | `HallucinationGuardrail` | In/out of scope examples |
+| `ussd_simulator` | `USSDSimulator` | USSD phone simulation |
+| `ivr` | `IVRSimulator` | Voice call simulation |
+| `voice_script` | `VoiceScript` | Voice prompts |
+| `tts` | `TTSOutput` | Text-to-speech preview |
+| `sms_preview` | `SMSPreview` | SMS template preview |
+| `vision_pipeline` | `VisionPipeline` | Crop photo analysis |
+| `privacy_consent` | `PrivacyConsent` | NDPA compliance |
+| `sms_inbox` | `SMSInbox` | Two-way messaging |
+| `ussd_flow_chart` | `USSDFlowChart` | USSD flow diagram |
+| `multilingual` | `MultilingualSupport` | Language selector |
+
+---
+
+## Current Status: Mock Data
+
+The frontend currently uses mock data for all features. This allows the UI to be fully functional and demonstrable without a live backend.
+
+### Mock Data Locations
+
+| Component | Mock Data Location |
+|-----------|-------------------|
+| USSD Simulator | `USSDSimulator.tsx` — translations object |
+| SMS Inbox | `USSDSimulator.tsx` — smsMessages object |
+| Chat Messages | `FarmerAppPage.tsx` — chatMessages array |
+| SMS Inbox (App) | `FarmerAppPage.tsx` — smsData array |
+| Judge Dashboard | `JudgeDashboard.tsx` — mockBlocks array |
+| Vision Analysis | `FarmerAppPage.tsx` — runPipeline() function |
+| Voice Scripts | `USSDSimulator.tsx` — translations object |
+
+### How to Connect Real Data
+
+1. **Replace the mock API calls** in `FarmerAppPage.tsx`:
+   - `sendChatMessage()` → call `/api/v1/chat`
+   - `runPipeline()` → call `/api/v1/vision`
+
+2. **Update the useGenUI hook** in `App.tsx` to fetch from the real backend:
+   - Replace `const { blocks, loading, error } = useGenUI("demo")` with the actual API call
+
+3. **Update environment variables** in `.env`:
+   ```
+   VITE_API_URL=http://localhost:8000
+   ```
+
+---
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   └── genui/                    # All GenUI components
+│   │       ├── AIPipeline.tsx
+│   │       ├── HallucinationGuardrail.tsx
+│   │       ├── IVRSimulator.tsx
+│   │       ├── MultilingualSupport.tsx
+│   │       ├── PrivacyConsent.tsx
+│   │       ├── SMSInbox.tsx
+│   │       ├── SMSPreview.tsx
+│   │       ├── TTSOutput.tsx
+│   │       ├── USSDFlowChart.tsx
+│   │       ├── USSDSimulator.tsx
+│   │       ├── VisionPipeline.tsx
+│   │       ├── VoiceScript.tsx
+│   │       ├── index.tsx
+│   │       └── types.ts
+│   ├── pages/                        # Main pages
+│   │   ├── Landing.tsx               # Landing page
+│   │   ├── USSDSimulator.tsx         # USSD Simulator page
+│   │   ├── FarmerAppPage.tsx         # Farmer Web App page
+│   │   └── JudgeDashboard.tsx        # Judge Dashboard page
+│   ├── hooks/
+│   │   └── useGenUI.ts
+│   ├── App.tsx                       # Main app with navigation
+│   ├── main.tsx
+│   └── index.css
+├── index.html
+├── package.json
+├── tailwind.config.js
+└── vite.config.ts
+```
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm (v9 or higher)
+
+### Steps
+
+```bash
+# Clone the repository
+git clone https://github.com/Emmanuel-Makori-Obiero/AGRION.git
+
+# Navigate to the frontend
+cd AGRION/frontend
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+
+# Open http://localhost:5173
+```
+
+### Environment Variables
+
+Create a `.env` file in the frontend root:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+---
+
+## How to Test
+
+### Navigation
+1. Open `http://localhost:5173`
+2. Use the navigation tabs: Home, USSD Simulator, Web App, Judge Dashboard
+
+### USSD Simulator
+1. Go to the USSD Simulator page
+2. Select a language
+3. Click through the 5 screens
+4. View the advisory, SMS inbox, and voice/IVR sections
+
+### Farmer App
+1. Go to the Web App page
+2. Type a question in the chat
+3. Upload a crop photo
+4. View the SMS inbox
+
+### Judge Dashboard
+1. Go to the Judge Dashboard page
+2. Filter components by tab
+3. Explore all GenUI components
+
+### Dark Mode
+- Click the moon/sun icon in the header to toggle themes
+
+---
+
+## Team
+
+| Name | Role |
+|------|------|
+| Emmanuel Obiero | Product & Project Lead |
+| Breattah Okeyo | UI/UX Designer |
+| Chrisben Evans Leo | Backend Developer |
+| Alfred Munga | AI & Automation Builder |
+| Lakiesha Sabaya | Agriculture Domain Expert |
+
+---
+
+## License
+
+This project is part of the **Kenya AI Challenge 2026** submission for **Crop2Cash Ltd**.
+
+---
+
+## Contact
+
+For questions or feedback, reach out to the team via the GitHub repository.
+
+---
+
+**Built with love for Nigerian farmers.**
