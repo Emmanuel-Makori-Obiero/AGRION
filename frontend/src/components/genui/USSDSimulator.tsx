@@ -9,7 +9,9 @@ import {
   Send,
   ArrowLeft,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  AlertCircle,
+  CreditCard
 } from "lucide-react";
 
 interface Props {
@@ -32,38 +34,35 @@ export function USSDSimulator({ block }: Props) {
     { label: "Advisory", icon: <CheckCircle className="w-4 h-4" /> },
   ];
 
-  // Language options - ALL CLICKABLE
   const languages = [
-    { code: "en", name: "English", flag: "🇬🇧", hausa: "Turanci", yoruba: "Gẹẹsi", igbo: "Bekee" },
-    { code: "ha", name: "Hausa", flag: "🇳🇬", hausa: "Hausa", yoruba: "Hausa", igbo: "Hausa" },
-    { code: "yo", name: "Yoruba", flag: "🇳🇬", hausa: "Yarbanci", yoruba: "Yoruba", igbo: "Yoruba" },
-    { code: "ig", name: "Igbo", flag: "🇳🇬", hausa: "Igbo", yoruba: "Igbo", igbo: "Igbo" },
+    { code: "en", name: "English" },
+    { code: "ha", name: "Hausa" },
+    { code: "yo", name: "Yoruba" },
+    { code: "ig", name: "Igbo" },
+    { code: "pcm", name: "Pidgin" },
   ];
 
-  // Crop options - ALL CLICKABLE
   const crops = [
-    { id: "maize", name: "Maize", hausa: "Masara", yoruba: "Agbado", igbo: "Ọka", emoji: "🌽" },
-    { id: "rice", name: "Rice", hausa: "Shinkafa", yoruba: "Iresi", igbo: "Osikapa", emoji: "🌾" },
-    { id: "cassava", name: "Cassava", hausa: "Rogo", yoruba: "Ege", igbo: "Akpu", emoji: "🥬" },
-    { id: "soya", name: "Soya", hausa: "Soya", yoruba: "Soya", igbo: "Soya", emoji: "🫘" },
+    { id: "maize", name: "Maize", hausa: "Masara", yoruba: "Agbado", igbo: "Ọka", pidgin: "Maize" },
+    { id: "rice", name: "Rice", hausa: "Shinkafa", yoruba: "Iresi", igbo: "Osikapa", pidgin: "Rice" },
+    { id: "cassava", name: "Cassava", hausa: "Rogo", yoruba: "Ege", igbo: "Akpu", pidgin: "Cassava" },
+    { id: "soya", name: "Soya", hausa: "Soya", yoruba: "Soya", igbo: "Soya", pidgin: "Soya" },
   ];
 
-  // Region options - ALL CLICKABLE
   const regions = [
-    { id: "kano", name: "Kano", hausa: "Kano", yoruba: "Kano", igbo: "Kano" },
-    { id: "kaduna", name: "Kaduna", hausa: "Kaduna", yoruba: "Kaduna", igbo: "Kaduna" },
-    { id: "kebbi", name: "Kebbi", hausa: "Kebbi", yoruba: "Kebbi", igbo: "Kebbi" },
-    { id: "lagos", name: "Lagos", hausa: "Legas", yoruba: "Eko", igbo: "Lagos" },
-    { id: "oyo", name: "Oyo", hausa: "Oyo", yoruba: "Oyo", igbo: "Oyo" },
-    { id: "enugu", name: "Enugu", hausa: "Enugu", yoruba: "Enugu", igbo: "Enugu" },
+    { id: "kano", name: "Kano", hausa: "Kano", yoruba: "Kano", igbo: "Kano", pidgin: "Kano" },
+    { id: "kaduna", name: "Kaduna", hausa: "Kaduna", yoruba: "Kaduna", igbo: "Kaduna", pidgin: "Kaduna" },
+    { id: "kebbi", name: "Kebbi", hausa: "Kebbi", yoruba: "Kebbi", igbo: "Kebbi", pidgin: "Kebbi" },
+    { id: "lagos", name: "Lagos", hausa: "Legas", yoruba: "Eko", igbo: "Lagos", pidgin: "Lagos" },
+    { id: "oyo", name: "Oyo", hausa: "Oyo", yoruba: "Oyo", igbo: "Oyo", pidgin: "Oyo" },
+    { id: "enugu", name: "Enugu", hausa: "Enugu", yoruba: "Enugu", igbo: "Enugu", pidgin: "Enugu" },
   ];
 
-  // Stage options - ALL CLICKABLE
   const stages = [
-    { id: "pre", name: "Pre-planting", hausa: "Kafin shuka", yoruba: "Ṣaaju dida", igbo: "Tupu ịkụ", emoji: "🌱" },
-    { id: "planting", name: "Planting", hausa: "Shuka", yoruba: "Dida", igbo: "Ịkụ", emoji: "🌿" },
-    { id: "growing", name: "Growing", hausa: "Girma", yoruba: "Dagba", igbo: "Itolite", emoji: "🌾" },
-    { id: "harvest", name: "Harvest", hausa: "Girbi", yoruba: "Ikore", igbo: "Owuwe", emoji: "🌻" },
+    { id: "pre", name: "Pre-planting", hausa: "Kafin shuka", yoruba: "Ṣaaju dida", igbo: "Tupu ịkụ", pidgin: "Before planting" },
+    { id: "planting", name: "Planting", hausa: "Shuka", yoruba: "Dida", igbo: "Ịkụ", pidgin: "Planting" },
+    { id: "growing", name: "Growing", hausa: "Girma", yoruba: "Dagba", igbo: "Itolite", pidgin: "Growing" },
+    { id: "harvest", name: "Harvest", hausa: "Girbi", yoruba: "Ikore", igbo: "Owuwe", pidgin: "Harvest" },
   ];
 
   const handleStepClick = (index: number) => {
@@ -114,6 +113,18 @@ export function USSDSimulator({ block }: Props) {
     setTimeout(() => handleNext(), 400);
   };
 
+  const getTranslation = (item: any, _field: string, langCode: string) => {
+    const langMap: Record<string, string> = {
+      en: "name",
+      ha: "hausa",
+      yo: "yoruba",
+      ig: "igbo",
+      pcm: "pidgin"
+    };
+    const key = langMap[langCode] || "name";
+    return item[key] || item.name;
+  };
+
   const getStepTitle = () => {
     const lang = selectedLanguage.toLowerCase();
     const titles: Record<string, Record<number, string>> = {
@@ -121,6 +132,7 @@ export function USSDSimulator({ block }: Props) {
       ha: { 0: "Zaɓi yarenka", 1: "Zaɓi amfanin gona", 2: "Zaɓi jihar ka", 3: "Menene marhalar noma ka?" },
       yo: { 0: "Yan ede rẹ", 1: "Yan irugbin rẹ", 2: "Yan ipinle rẹ", 3: "Ipele ogbin rẹ?" },
       ig: { 0: "Họrọ asụsụ gị", 1: "Họrọ ihe ọkụkụ gị", 2: "Họrọ steeti gị", 3: "Oge ọrụ ugbo gị?" },
+      pcm: { 0: "Choose your language", 1: "Choose your crop", 2: "Choose your state", 3: "Wetin be your farm stage?" },
     };
     return titles[lang]?.[currentStep] || titles.en[currentStep] || "";
   };
@@ -132,6 +144,7 @@ export function USSDSimulator({ block }: Props) {
       ha: { 0: "", 1: "(Select your crop)", 2: "(Select your state)", 3: "(What is your farm stage?)" },
       yo: { 0: "", 1: "(Yan irugbin rẹ)", 2: "(Yan ipinle rẹ)", 3: "(Ipele ogbin rẹ?)" },
       ig: { 0: "", 1: "(Họrọ ihe ọkụkụ gị)", 2: "(Họrọ steeti gị)", 3: "(Oge ọrụ ugbo gị?)" },
+      pcm: { 0: "", 1: "(Choose your crop)", 2: "(Choose your state)", 3: "(Wetin be your farm stage?)" },
     };
     return subtitles[lang]?.[currentStep] || "";
   };
@@ -147,11 +160,18 @@ export function USSDSimulator({ block }: Props) {
               {getStepTitle()}
             </div>
             {getStepSubtitle() && (
-              <div className="text-xs text-gray-400 -mt-1">{getStepSubtitle()}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 -mt-1">{getStepSubtitle()}</div>
             )}
             <div className="grid grid-cols-2 gap-2">
               {languages.map((langOpt) => {
-                const displayName = langOpt[lang as keyof typeof langOpt] || langOpt.name;
+                const langNameMap: Record<string, Record<string, string>> = {
+                  en: { en: "English", ha: "Hausa", yo: "Yoruba", ig: "Igbo", pcm: "Pidgin" },
+                  ha: { en: "Turanci", ha: "Hausa", yo: "Yarbanci", ig: "Igbo", pcm: "Pidgin" },
+                  yo: { en: "Gẹẹsi", ha: "Hausa", yo: "Yoruba", ig: "Igbo", pcm: "Pidgin" },
+                  ig: { en: "Bekee", ha: "Hausa", yo: "Yoruba", ig: "Igbo", pcm: "Pidgin" },
+                  pcm: { en: "English", ha: "Hausa", yo: "Yoruba", ig: "Igbo", pcm: "Pidgin" },
+                };
+                const displayName = langNameMap[lang]?.[langOpt.code] || langOpt.name;
                 return (
                   <button
                     key={langOpt.code}
@@ -159,12 +179,11 @@ export function USSDSimulator({ block }: Props) {
                     className={`p-3 rounded-lg border text-left transition-all ${
                       selectedLanguage === langOpt.name
                         ? 'border-marigold dark:border-dark-accent bg-marigold/10 dark:bg-dark-accent/10'
-                        : 'border-gray-700 hover:border-gray-500'
+                        : 'border-gray-600 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{langOpt.flag}</span>
-                      <span className="text-sm">{displayName}</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{displayName}</span>
                       {selectedLanguage === langOpt.name && (
                         <CheckCircle className="w-4 h-4 text-marigold dark:text-dark-accent ml-auto" />
                       )}
@@ -173,7 +192,7 @@ export function USSDSimulator({ block }: Props) {
                 );
               })}
             </div>
-            <div className="text-xs text-gray-500 mt-2">Enter option: {languages.findIndex(l => l.name === selectedLanguage) + 1}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Enter option: {languages.findIndex(l => l.name === selectedLanguage) + 1}</div>
           </div>
         );
       case 1:
@@ -183,11 +202,11 @@ export function USSDSimulator({ block }: Props) {
               {getStepTitle()}
             </div>
             {getStepSubtitle() && (
-              <div className="text-xs text-gray-400 -mt-1">{getStepSubtitle()}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 -mt-1">{getStepSubtitle()}</div>
             )}
             <div className="grid grid-cols-2 gap-2">
               {crops.map((crop) => {
-                const displayName = crop[lang as keyof typeof crop] || crop.name;
+                const displayName = getTranslation(crop, "name", lang);
                 return (
                   <button
                     key={crop.id}
@@ -195,12 +214,12 @@ export function USSDSimulator({ block }: Props) {
                     className={`p-3 rounded-lg border text-left transition-all ${
                       selectedCrop === crop.name
                         ? 'border-marigold dark:border-dark-accent bg-marigold/10 dark:bg-dark-accent/10'
-                        : 'border-gray-700 hover:border-gray-500'
+                        : 'border-gray-600 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{crop.emoji}</span>
-                      <span className="text-sm">{displayName}</span>
+                      <Sprout className="w-4 h-4 text-marigold dark:text-dark-accent" />
+                      <span className="text-sm text-gray-900 dark:text-white">{displayName}</span>
                       {selectedCrop === crop.name && (
                         <CheckCircle className="w-4 h-4 text-marigold dark:text-dark-accent ml-auto" />
                       )}
@@ -209,8 +228,8 @@ export function USSDSimulator({ block }: Props) {
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <button onClick={handleBack} className="hover:text-white">0. Koma (Back)</button>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <button onClick={handleBack} className="hover:text-gray-900 dark:hover:text-white">0. Koma (Back)</button>
             </div>
           </div>
         );
@@ -221,11 +240,11 @@ export function USSDSimulator({ block }: Props) {
               {getStepTitle()}
             </div>
             {getStepSubtitle() && (
-              <div className="text-xs text-gray-400 -mt-1">{getStepSubtitle()}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 -mt-1">{getStepSubtitle()}</div>
             )}
             <div className="grid grid-cols-2 gap-2">
               {regions.map((region) => {
-                const displayName = region[lang as keyof typeof region] || region.name;
+                const displayName = getTranslation(region, "name", lang);
                 return (
                   <button
                     key={region.id}
@@ -233,11 +252,12 @@ export function USSDSimulator({ block }: Props) {
                     className={`p-3 rounded-lg border text-left transition-all ${
                       selectedRegion === region.name
                         ? 'border-marigold dark:border-dark-accent bg-marigold/10 dark:bg-dark-accent/10'
-                        : 'border-gray-700 hover:border-gray-500'
+                        : 'border-gray-600 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">{displayName}</span>
+                      <MapPin className="w-4 h-4 text-marigold dark:text-dark-accent" />
+                      <span className="text-sm text-gray-900 dark:text-white">{displayName}</span>
                       {selectedRegion === region.name && (
                         <CheckCircle className="w-4 h-4 text-marigold dark:text-dark-accent ml-auto" />
                       )}
@@ -246,8 +266,8 @@ export function USSDSimulator({ block }: Props) {
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <button onClick={handleBack} className="hover:text-white">0. Koma (Back)</button>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <button onClick={handleBack} className="hover:text-gray-900 dark:hover:text-white">0. Koma (Back)</button>
             </div>
           </div>
         );
@@ -258,11 +278,11 @@ export function USSDSimulator({ block }: Props) {
               {getStepTitle()}
             </div>
             {getStepSubtitle() && (
-              <div className="text-xs text-gray-400 -mt-1">{getStepSubtitle()}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 -mt-1">{getStepSubtitle()}</div>
             )}
             <div className="grid grid-cols-2 gap-2">
               {stages.map((stage) => {
-                const displayName = stage[lang as keyof typeof stage] || stage.name;
+                const displayName = getTranslation(stage, "name", lang);
                 return (
                   <button
                     key={stage.id}
@@ -270,12 +290,12 @@ export function USSDSimulator({ block }: Props) {
                     className={`p-3 rounded-lg border text-left transition-all ${
                       selectedStage === stage.name
                         ? 'border-marigold dark:border-dark-accent bg-marigold/10 dark:bg-dark-accent/10'
-                        : 'border-gray-700 hover:border-gray-500'
+                        : 'border-gray-600 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{stage.emoji}</span>
-                      <span className="text-sm">{displayName}</span>
+                      <CalendarDays className="w-4 h-4 text-marigold dark:text-dark-accent" />
+                      <span className="text-sm text-gray-900 dark:text-white">{displayName}</span>
                       {selectedStage === stage.name && (
                         <CheckCircle className="w-4 h-4 text-marigold dark:text-dark-accent ml-auto" />
                       )}
@@ -284,8 +304,8 @@ export function USSDSimulator({ block }: Props) {
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <button onClick={handleBack} className="hover:text-white">0. Koma (Back)</button>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <button onClick={handleBack} className="hover:text-gray-900 dark:hover:text-white">0. Koma (Back)</button>
             </div>
           </div>
         );
@@ -293,40 +313,46 @@ export function USSDSimulator({ block }: Props) {
         return (
           <div className="space-y-3">
             <div className="text-marigold dark:text-dark-accent text-sm font-medium flex items-center gap-2">
-              <span>⚠️</span> NASIHA / ADVISORY
+              <AlertCircle className="w-4 h-4 text-marigold dark:text-dark-accent" />
+              <span className="text-gray-900 dark:text-white">NASIHA / ADVISORY</span>
             </div>
             <div className="bg-marigold/5 dark:bg-dark-accent/5 border border-marigold/20 dark:border-dark-accent/20 rounded-lg p-3 space-y-2">
-              <div className="text-xs text-gray-400">{selectedRegion} · {selectedCrop} · 2026</div>
-              <p className="text-sm leading-relaxed text-white">
+              <div className="text-xs text-gray-500 dark:text-gray-400">{selectedRegion} · {selectedCrop} · 2026</div>
+              <p className="text-sm leading-relaxed text-gray-900 dark:text-white">
                 {lang === "ha" 
                   ? `Ruwan sama zai makara a ${selectedRegion} wannan shekarar. Jira makonni 2 kafin dasa. Yi amfani da SAMMAZ 15 wanda yake jurewa fari.`
                   : lang === "yo"
                   ? `Ojo yoo pẹ ni ${selectedRegion} ni ọdun yii. Duro ọsẹ 2 ṣaaju dida. Lo SAMMAZ 15 ti o ko ogbele.`
                   : lang === "ig"
                   ? `Mmiri ozuzo ga-egbu oge na ${selectedRegion} n'afọ a. Chere izu 2 tupu ịkụ. Jiri SAMMAZ 15 nke na-eguzogide ọkọchị.`
+                  : lang === "pcm"
+                  ? `Rain go late for ${selectedRegion} this year. Wait 2 weeks before planting. Use SAMMAZ 15 wey fit survive dry weather.`
                   : `Rains will be late in ${selectedRegion} this year. Wait 2 weeks before planting. Use SAMMAZ 15 which is drought-tolerant.`
                 }
               </p>
               <div className="bg-marigold/10 dark:bg-dark-accent/10 border border-marigold/30 dark:border-dark-accent/30 rounded p-2">
-                <p className="text-xs text-marigold dark:text-dark-accent">
-                  💰 {lang === "ha" 
+                <p className="text-xs text-marigold dark:text-dark-accent flex items-center gap-1">
+                  <CreditCard className="w-3 h-3" />
+                  <span className="text-gray-900 dark:text-white">{lang === "ha" 
                     ? `Ajiye ₦2,000 akan CashCard kafin sayo taki`
                     : lang === "yo"
                     ? `Fipamọ ₦2,000 lori CashCard rẹ ṣaaju ra ajile`
                     : lang === "ig"
                     ? `Chekwaa ₦2,000 na CashCard gị tupu ịzụta fatiliza`
+                    : lang === "pcm"
+                    ? `Save ₦2,000 for your CashCard before you buy fertilizer`
                     : `Save ₦2,000 on your CashCard before buying fertilizer`
-                  }
+                  }</span>
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 <CheckCircle className="w-3 h-3 text-green-500" />
-                SMS an aika ✓
+                <span>SMS an aika ✓</span>
               </div>
             </div>
             <button 
               onClick={handleReset}
-              className="w-full py-2 text-xs text-gray-400 hover:text-white border border-gray-700 rounded-lg transition-colors"
+              className="w-full py-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-600 dark:border-gray-600 rounded-lg transition-colors"
             >
               0. Ƙarshe (End Session)
             </button>
@@ -342,7 +368,8 @@ export function USSDSimulator({ block }: Props) {
       en: ["Language", "Crop", "Region", "Stage", "Advisory"],
       ha: ["Yare", "Amfanin gona", "Jiha", "Marhalar noma", "Nasiha"],
       yo: ["Ede", "Irugbin", "Ipinle", "Ipele", "Imọran"],
-      ig: ["Asụsụ", "Ihe ọkụkụ", "Steeti", "Oge", "Ndụmọdụ"]
+      ig: ["Asụsụ", "Ihe ọkụkụ", "Steeti", "Oge", "Ndụmọdụ"],
+      pcm: ["Language", "Crop", "Region", "Stage", "Advisory"],
     };
     const lang = selectedLanguage.toLowerCase();
     const label = labels[lang as keyof typeof labels] || labels.en;
@@ -370,7 +397,6 @@ export function USSDSimulator({ block }: Props) {
         </div>
       </div>
 
-      {/* Step Tracker - Longer and clearer */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-dallas dark:text-dark-text2 font-mono">
@@ -414,8 +440,7 @@ export function USSDSimulator({ block }: Props) {
         </div>
       </div>
 
-      {/* Phone Screen - MUCH TALLER */}
-      <div className="bg-ussd-bg dark:bg-ussd-bg rounded-lg p-5 min-h-[340px] text-white font-mono text-sm transition-all duration-300">
+      <div className="bg-ussd-bg dark:bg-ussd-bg rounded-lg p-5 min-h-[340px] font-mono text-sm transition-all duration-300">
         <div className="flex justify-between text-xs text-ussd-dim mb-4">
           <span>*384#</span>
           <span>Step {stepInfo.number} of {stepInfo.total}</span>
@@ -423,7 +448,6 @@ export function USSDSimulator({ block }: Props) {
         {getStepContent()}
       </div>
 
-      {/* Navigation */}
       <div className="flex gap-2 mt-4">
         <button 
           onClick={handleBack}
@@ -467,7 +491,6 @@ export function USSDSimulator({ block }: Props) {
         </button>
       </div>
 
-      {/* Session Info */}
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-dallas dark:text-dark-text2 bg-cream dark:bg-dark-bg2 p-2 rounded">
         <span className="font-medium">Session:</span>
         <span>{selectedLanguage} · {selectedCrop} · {selectedRegion} · {selectedStage}</span>

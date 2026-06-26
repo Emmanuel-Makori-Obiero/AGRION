@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class', // Enable dark mode with class strategy
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -17,28 +17,18 @@ export default {
         dallas: '#7a5d2c',
         judge: '#4f3f2e',
         thunder: '#2e292b',
+        white: '#ffffff',
         
-        // Sandy Serenity Palette - Dark Mode
-        'dark-bg': '#1c1610',
-        'dark-bg2': '#241e14',
-        'dark-bg3': '#2e2718',
-        'dark-surface': '#2e292b',
-        'dark-border': '#4f3f2e',
-        'dark-text': '#f1e6b2',
-        'dark-text2': '#e2c68a',
-        'dark-text3': '#d4a54e',
-        'dark-accent': '#d4a54e',
-        'dark-accent2': '#c48f2b',
-        
-        // USSD Colors
-        'ussd-bg': '#1a1208',
-        'ussd-screen': '#0e0c08',
-        'ussd-dim': '#7a5d2c',
-        
-        // Aliases
-        harvest: '#c48f2b',
-        soil: '#2e292b',
-        surface: '#ffffff',
+        // Sandy Serenity Palette - Dark Mode (Black + Brown accents)
+        'dark-bg': '#0a0a0a',        // Pure black background
+        'dark-bg2': '#1a1208',       // Very dark brown
+        'dark-bg3': '#2a1a0e',       // Dark brown
+        'dark-surface': '#14100c',   // Dark surface
+        'dark-border': '#3a2a1a',    // Brown border
+        'dark-text': '#f1e6b2',      // Cream text
+        'dark-text2': '#c9b28a',     // Lighter brown text
+        'dark-text3': '#a8752f',     // Copper text
+        'dark-accent': '#d4a54e',    // Gold accent
       },
     },
   },

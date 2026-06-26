@@ -5,7 +5,12 @@ import {
   Copy, 
   CheckCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileText,
+  DollarSign,
+  Image,
+  Check,
+  AlertCircle
 } from "lucide-react";
 
 interface Props {
@@ -19,49 +24,21 @@ export function SMSPreview({ block }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const templates = [
-    { id: "advisory", label: "Advisory", icon: "🌾" },
-    { id: "finance", label: "Finance Nudge", icon: "💰" },
-    { id: "image", label: "Image Upload", icon: "📷" },
-    { id: "confirmation", label: "Confirmation", icon: "✅" },
+    { id: "advisory", label: "Advisory", icon: <FileText className="w-3 h-3" /> },
+    { id: "finance", label: "Finance Nudge", icon: <DollarSign className="w-3 h-3" /> },
+    { id: "image", label: "Image Upload", icon: <Image className="w-3 h-3" /> },
+    { id: "confirmation", label: "Confirmation", icon: <Check className="w-3 h-3" /> },
   ];
 
   const languages = [
-    { code: "en", name: "English", flag: "🇬🇧" },
-    { code: "ha", name: "Hausa", flag: "🇳🇬" },
-    { code: "yo", name: "Yoruba", flag: "🇳🇬" },
-    { code: "ig", name: "Igbo", flag: "🇳🇬" },
+    { code: "en", name: "English", flag: "GB" },
+    { code: "ha", name: "Hausa", flag: "NG" },
+    { code: "yo", name: "Yoruba", flag: "NG" },
+    { code: "ig", name: "Igbo", flag: "NG" },
   ];
 
-  // SMS content in all 4 languages
-  const smsContent: Record<string, Record<string, string>> = {
-    advisory: {
-      en: "AGRION: Kano Maize 2026. Rains will be late. Wait 2 weeks before planting. Use SAMMAZ 15. Save ₦2,000 before buying fertilizer.",
-      ha: "AGRION: Kano Masara 2026. Ruwan sama zai makara. Jira makonni 2 kafin dasa. Yi amfani da SAMMAZ 15. Ajiye ₦2,000 kafin sayo taki.",
-      yo: "AGRION: Kano Agbado 2026. Ojo yoo pẹ. Duro ọsẹ 2 ṣaaju dida. Lo SAMMAZ 15. Fipamọ ₦2,000 ṣaaju ra ajile.",
-      ig: "AGRION: Kano Ọka 2026. Mmiri ozuzo ga-egbu oge. Chere izu 2 tupu ịkụ. Jiri SAMMAZ 15. Chekwaa ₦2,000 tupu ịzụta fatiliza.",
-    },
-    finance: {
-      en: "Reminder: You have 14 days to save ₦2,000 on your CashCard. Prepare before fertilizer buying season.",
-      ha: "Tuna: Kana da kwanaki 14 don ajiye ₦2,000 akan CashCard. Ka shirya kafin lokacin sayo taki.",
-      yo: "Iranti: O ni ọjọ 14 lati fipamọ ₦2,000 lori CashCard rẹ. Mura ṣaaju akoko ra ajile.",
-      ig: "Ncheta: Ị nwere ụbọchị 14 ịchekwa ₦2,000 na CashCard gị. Kwadoo tupu oge ịzụta fatiliza.",
-    },
-    image: {
-      en: "Send photo of your crop to 0800-AGRI-CONNECT. We will analyze and send advice within 24 hours.",
-      ha: "Aika hoton amfanin gonarka zuwa 0800-AGRI-CONNECT. Za mu bincika kuma mu aiko da nasiha cikin awa 24.",
-      yo: "Firanse fọto irugbin rẹ si 0800-AGRI-CONNECT. A yoo ṣe ayẹwo ati firanse imọran laarin wakati 24.",
-      ig: "Ziga foto ihe ọkụkụ gị na 0800-AGRI-CONNECT. Anyị ga-enyocha ma ziga ndụmọdụ n'ime awa 24.",
-    },
-    confirmation: {
-      en: "Advisory sent. To listen again, call *384#. Thank you for using AgriConnect.",
-      ha: "Nasiha an aika. Domin sake saurara, kira *384#. Na gode da amfani da AgriConnect.",
-      yo: "Imọran ti firanse. Lati tun gbọ, pe *384#. O ṣeun fun lilo AgriConnect.",
-      ig: "Ndụmọdụ ezitere. Iji gee ntị ọzọ, kpọọ *384#. Daalụ maka iji AgriConnect.",
-    },
-  };
-
   const getCurrentSms = () => {
-    return smsContent[selectedTemplate]?.[selectedLanguage] || smsContent.advisory.en;
+    return block.content?.[selectedTemplate]?.[selectedLanguage] || "Content not available";
   };
 
   const getCharacterCount = () => {
@@ -83,25 +60,22 @@ export function SMSPreview({ block }: Props) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getLanguageDisplay = (langCode: string) => {
-    const lang = languages.find(l => l.code === langCode);
-    return lang ? `${lang.flag} ${lang.name}` : langCode;
-  };
-
-  const getTemplateDisplay = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    return template ? `${template.icon} ${template.label}` : templateId;
+  const getCharStatusColor = () => {
+    const count = getCharacterCount();
+    if (count <= 160) return 'text-green-600 dark:text-green-400';
+    if (count <= 320) return 'text-amber-600 dark:text-amber-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   return (
-    <div className="rounded-xl border border-sand dark:border-dark-border bg-white dark:bg-dark-surface p-4 shadow-sm transition-colors duration-300">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm transition-colors duration-300">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-thunder dark:text-dark-text flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-marigold dark:text-dark-accent" />
           SMS Preview
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-xs bg-cream dark:bg-dark-bg2 text-dallas dark:text-dark-text2 px-2 py-1 rounded">
+          <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
             {getSegments()} segment{getSegments() > 1 ? "s" : ""} · {getCharacterCount()}/{getMaxChars()} chars
           </span>
         </div>
@@ -116,7 +90,7 @@ export function SMSPreview({ block }: Props) {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               selectedLanguage === lang.code
                 ? 'bg-marigold dark:bg-dark-accent text-white'
-                : 'bg-cream dark:bg-dark-bg2 text-dallas dark:text-dark-text2 hover:bg-sand/20 dark:hover:bg-dark-bg3'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
             {lang.flag} {lang.name}
@@ -130,34 +104,35 @@ export function SMSPreview({ block }: Props) {
           <button
             key={template.id}
             onClick={() => setSelectedTemplate(template.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
               selectedTemplate === template.id
-                ? 'bg-copper dark:bg-dark-text3 text-white'
-                : 'bg-cream dark:bg-dark-bg2 text-dallas dark:text-dark-text2 hover:bg-sand/20 dark:hover:bg-dark-bg3'
+                ? 'bg-marigold/20 dark:bg-dark-accent/20 text-marigold dark:text-dark-accent border border-marigold/30 dark:border-dark-accent/30'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
-            {template.icon} {template.label}
+            {template.icon}
+            {template.label}
           </button>
         ))}
       </div>
 
       {/* SMS Preview Box */}
-      <div className="bg-ussd-bg dark:bg-ussd-bg rounded-lg p-4 relative">
+      <div className="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 relative">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-ussd-dim font-mono">
-            {getLanguageDisplay(selectedLanguage)} · {getTemplateDisplay(selectedTemplate)}
+          <span className="text-xs text-gray-400 font-mono">
+            {languages.find(l => l.code === selectedLanguage)?.flag} {languages.find(l => l.code === selectedLanguage)?.name} · {templates.find(t => t.id === selectedTemplate)?.label}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-ussd-dim hover:text-ussd-text transition-colors"
+              className="text-gray-400 hover:text-gray-300 transition-colors"
               title={expanded ? "Collapse" : "Expand"}
             >
               {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
             <button
               onClick={handleCopy}
-              className="text-ussd-dim hover:text-ussd-text transition-colors flex items-center gap-1"
+              className="text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
               title="Copy to clipboard"
             >
               {copied ? (
@@ -168,27 +143,22 @@ export function SMSPreview({ block }: Props) {
             </button>
           </div>
         </div>
-        <div className={`text-serria font-mono text-sm leading-relaxed transition-all ${
+        <div className={`text-gray-200 font-mono text-sm leading-relaxed transition-all ${
           expanded ? '' : 'line-clamp-2'
         }`}>
           "{getCurrentSms()}"
         </div>
-        <div className="flex items-center justify-between mt-3 pt-2 border-t border-ussd-dim/30">
-          <span className={`text-xs font-mono ${
-            getCharacterCount() <= 160 
-              ? 'text-green-500' 
-              : getCharacterCount() <= 320 
-                ? 'text-amber-500' 
-                : 'text-red-500'
-          }`}>
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-700">
+          <span className={`text-xs font-mono ${getCharStatusColor()}`}>
             {getCharacterCount()} / {getMaxChars()} characters
           </span>
-          <span className="text-xs text-ussd-dim">
+          <span className="text-xs text-gray-400">
             {getSegments()} SMS segment{getSegments() > 1 ? "s" : ""}
           </span>
           {getSegments() > 1 && (
-            <span className="text-xs text-amber-500">
-              ⚠️ Will be split into {getSegments()} messages
+            <span className="text-xs text-amber-400 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Split into {getSegments()} messages
             </span>
           )}
         </div>
@@ -197,25 +167,25 @@ export function SMSPreview({ block }: Props) {
       {/* All Templates Preview (when expanded) */}
       {expanded && (
         <div className="mt-4 space-y-3">
-          <div className="text-xs font-semibold text-dallas dark:text-dark-text2 uppercase tracking-wider">
-            All Templates ({getLanguageDisplay(selectedLanguage)})
+          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            All Templates ({languages.find(l => l.code === selectedLanguage)?.name})
           </div>
           {templates.map((template) => {
-            const content = smsContent[template.id]?.[selectedLanguage] || "Content not available";
+            const content = block.content?.[template.id]?.[selectedLanguage] || "Content not available";
             const count = content.length;
             return (
-              <div key={template.id} className="bg-cream dark:bg-dark-bg2 rounded-lg p-3 border border-sand/50 dark:border-dark-border/50">
+              <div key={template.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-dallas dark:text-dark-text2">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1">
                     {template.icon} {template.label}
                   </span>
                   <span className={`text-[10px] font-mono ${
-                    count <= 160 ? 'text-green-500' : 'text-amber-500'
+                    count <= 160 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'
                   }`}>
                     {count} chars
                   </span>
                 </div>
-                <p className="text-sm text-thunder dark:text-dark-text font-mono leading-relaxed">
+                <p className="text-sm text-gray-800 dark:text-gray-200 font-mono leading-relaxed">
                   "{content}"
                 </p>
               </div>
@@ -225,7 +195,7 @@ export function SMSPreview({ block }: Props) {
       )}
 
       {/* Character Guide */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-[10px] text-dallas dark:text-dark-text2 bg-cream dark:bg-dark-bg2 p-2 rounded">
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded">
         <span className="font-medium">SMS Guidelines:</span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -239,7 +209,7 @@ export function SMSPreview({ block }: Props) {
           <span className="w-2 h-2 rounded-full bg-red-500"></span>
           &gt;320 chars = 3+ segments
         </span>
-        <span className="text-[9px] text-copper">• Avoid jargon • Use local language</span>
+        <span className="text-gray-400">• Avoid jargon • Use local language</span>
       </div>
     </div>
   );

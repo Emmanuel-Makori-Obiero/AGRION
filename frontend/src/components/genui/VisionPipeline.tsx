@@ -8,7 +8,10 @@ import {
   X,
   RefreshCw,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Phone,
+  Brain,
+  Send
 } from "lucide-react";
 
 interface Props {
@@ -33,10 +36,10 @@ export function VisionPipeline({ block }: Props) {
   void block;
 
   const stages = [
-    { id: 0, label: "Stage 1 — Backend capture (MMS received)", icon: "📥" },
-    { id: 1, label: "Stage 2 — AI upscaling & denoising", icon: "🔍" },
-    { id: 2, label: "Stage 3 — Vision LLM analysis", icon: "🧠" },
-    { id: 3, label: "Stage 4 — Dispatching SMS via Africa's Talking", icon: "📱" },
+    { id: 0, label: "Stage 1 — Backend capture (MMS received)", icon: <Phone className="w-4 h-4" /> },
+    { id: 1, label: "Stage 2 — AI upscaling & denoising", icon: <Sparkles className="w-4 h-4" /> },
+    { id: 2, label: "Stage 3 — Vision LLM analysis", icon: <Brain className="w-4 h-4" /> },
+    { id: 3, label: "Stage 4 — Dispatching SMS via Africa's Talking", icon: <Send className="w-4 h-4" /> },
   ];
 
   const processImageFile = (file: File) => {
@@ -337,7 +340,7 @@ export function VisionPipeline({ block }: Props) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-thunder dark:text-dark-text">
-                    🧬 {result.condition}
+                    {result.condition}
                   </p>
                   <p className="text-xs text-dallas dark:text-dark-text2">
                     Confidence: {result.confidence}%
@@ -352,7 +355,7 @@ export function VisionPipeline({ block }: Props) {
 
             <div className="bg-ussd-bg dark:bg-ussd-bg rounded-lg p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-ussd-dim">📱 SMS Preview</span>
+                <span className="text-xs text-ussd-dim">SMS Preview</span>
                 <span className={`text-xs font-mono ${
                   result.sms.length <= 160 ? 'text-marigold dark:text-dark-accent' : 'text-copper'
                 }`}>
