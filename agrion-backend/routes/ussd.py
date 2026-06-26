@@ -1,7 +1,14 @@
+"""
+Africa's Talking inbound USSD webhook.
+"""
 import logging
 import os
 import threading  # Added for background asynchronous tasks
 import requests
+import secrets    # Added for secure coupon generation
+import string     # Added for character sets
+import json       # Added to update sms_outbox.json directly
+from datetime import datetime
 from flask import Blueprint, Response, request
 
 from services.ai_engine import get_advice, get_or_generate_context
@@ -46,7 +53,7 @@ I18N = {
         "ndpa_erase_confirm": "CON Erase ALL records? Cannot be undone.\n1. Yes, Erase\n2. Cancel",
         "ndpa_erase_done": "END Your data has been erased. Thank you for using Agrion.",
         "ndpa_policy": "END Full policy: agrion.ng/privacy — NDPA 2023 compliant.",
-        "sms_sent": "END Advice sent to your phone via SMS. Check your messages.",
+        "sms_sent": "END Advice processed successfully.\nRetrieval Code: ",
         "sms_failed": "END {}",
         "invalid": "END Invalid option. Dial *384*55# to start again.",
     },
@@ -78,19 +85,14 @@ I18N = {
         "ndpa_erase_confirm": "CON Share duk bayanan? Ba za a iya dawowa ba.\n1. Ee, Share\n2. Soke",
         "ndpa_erase_done": "END An share bayananku. Nagode da amfani da Agrion.",
         "ndpa_policy": "END Cikakken manufa: agrion.ng/privacy",
-        "sms_sent": "END An aika shawarar zuwa wayar ku ta SMS.",
+        "sms_sent": "END An adana bayanan cikin nasara.\nLambar Taimako: ",
         "sms_failed": "END {}",
         "invalid": "END Zaɓi mara inganci. Buga *384*55# don farawa.",
     },
+    # (Keep yo, ig, and pcm structures completely identical to your layout)
     "yo": {
-        "main_menu": (
-            "CON Yan iṣẹ:\n1. Imọran Irugbin\n2. Iroyin Oju Ojo\n"
-            "3. Iye Oja\n4. Data Mi\n5. Iranlowo Ohun"
-        ),
-        "crop_menu": (
-            "CON Imọran Irugbin:\n1. Awon Irugbin Akọkọ\n2. Wa nipasẹ Orukọ\n"
-            "3. Damo nipasẹ Foto\n4. Apejuwe Ohun"
-        ),
+        "main_menu": "CON Yan iṣẹ:\n1. Imọran Irugbin\n2. Iroyin Oju Ojo\n3. Iye Oja\n4. Data Mi\n5. Iranlowo Ohun",
+        "crop_menu": "CON Imọran Irugbin:\n1. Awon Irugbin Akọkọ\n2. Wa nipasẹ Orukọ\n3. Damo nipasẹ Foto\n4. Apejuwe Ohun",
         "choose_crop": "CON Yan irugbin:\n",
         "type_crop": "CON Tẹ orukọ irugbin rẹ\n(apẹẹrẹ: sorghum, ata, ẹpa):",
         "describe_problem": "CON Ṣapejuwe iṣoro {} ni awon ọrọ diẹ:",
@@ -101,28 +103,19 @@ I18N = {
         "ivr_failed": "END Ko le bẹrẹ ipe. Gbiyanju lẹẹkansi.",
         "weather_info": "END Iroyin oju ojo n bọ.",
         "market_info": "CON Iye Oja n bọ.\n0. Pada",
-        "ndpa_menu": (
-            "CON Data Mi (NDPA 2023):\n1. Wo data mi\n2. Ṣe atunṣe data mi\n"
-            "3. Pa data mi run\n4. Eto Ikọkọ"
-        ),
+        "ndpa_menu": "CON Data Mi (NDPA 2023):\n1. Wo data mi\n2. Ṣe atunṣe data mi\n3. Pa data mi run\n4. Eto Ikọkọ",
         "ndpa_view": "END Awon ibeere rẹ ti o kọja ni a tọju ni aabo.",
         "ndpa_rectify": "END Fi atunṣe ranṣẹ si support@agrion.ng.",
         "ndpa_erase_confirm": "CON Pa gbogbo data run?\n1. Bẹẹni, Pa Run\n2. Fagilee",
         "ndpa_erase_done": "END Data rẹ ti parun. E dupe fun lilo Agrion.",
         "ndpa_policy": "END Eto ni kikun: agrion.ng/privacy",
-        "sms_sent": "END Imọran ti firanṣẹ si foonu rẹ nipasẹ SMS.",
+        "sms_sent": "END Imọran ti fipamọ daradara.\nKoodu rẹ: ",
         "sms_failed": "END {}",
         "invalid": "END Aṣayan ti ko tọ. Pe *384*55# lati bẹrẹ.",
     },
     "ig": {
-        "main_menu": (
-            "CON Họrọ ọrụ:\n1. Ndụmọdụ Ọjị\n2. Ihe Ọhụrụ Ihu Igwe\n"
-            "3. Ọnụahịa Ahịa\n4. Data M\n5. Enyemaka Olu"
-        ),
-        "crop_menu": (
-            "CON Ndụmọdụ Ọjị:\n1. Ọjị Bụ Isi\n2. Chọọ site na Aha\n"
-            "3. Chọpụta site na Foto\n4. Nkọwa Olu"
-        ),
+        "main_menu": "CON Họrọ ọrụ:\n1. Ndụmọdụ Ọjị\n2. Ihe Ọhụrụ Ihu Igwe\n3. Ọnụahịa Ahịa\n4. Data M\n5. Enyemaka Olu",
+        "crop_menu": "CON Ndụmọdụ Ọjị:\n1. Ọjị Bụ Isi\n2. Chọọ site na Aha\n3. Chọpụta site na Foto\n4. Nkọwa Olu",
         "choose_crop": "CON Họrọ ọjị:\n",
         "type_crop": "CON Dee aha ọjị gị\n(ọmụmaatụ: sorghum, ose, groundnut):",
         "describe_problem": "CON Kọwaa nsogbu {} n'okwu ole na ole:",
@@ -133,28 +126,19 @@ I18N = {
         "ivr_failed": "END Enweghị ike ịmalite oku. Nwaa ọzọ.",
         "weather_info": "END Ihe ọhụrụ ihu igwe na-abịa.",
         "market_info": "CON Ọnụahịa Ahịa na-abịa.\n0. Laghachi",
-        "ndpa_menu": (
-            "CON Data M (NDPA 2023):\n1. Lee data m\n2. Dozie data m\n"
-            "3. Hichapụ data m\n4. Iwu Nzuzo"
-        ),
+        "ndpa_menu": "CON Data M (NDPA 2023):\n1. Lee data m\n2. Dozie data m\n3. Hichapụ data m\n4. Iwu Nzuzo",
         "ndpa_view": "END Ajụjụ gị ndị gara aga edekọtara ha nchekwa.",
         "ndpa_rectify": "END Zipu ndozi na support@agrion.ng.",
         "ndpa_erase_confirm": "CON Hichapụ akọrọ niile?\n1. Ee, Hichapụ\n2. Kagbuo",
         "ndpa_erase_done": "END Ehichapụla data gị. Daalụ maka iji Agrion.",
         "ndpa_policy": "END Iwu zuru ezu: agrion.ng/privacy",
-        "sms_sent": "END Ezitela ndụmọdụ na ekwentị gị site na SMS.",
+        "sms_sent": "END Echekwara ndụmọdụ nke ọma.\nKoodu gị: ",
         "sms_failed": "END {}",
         "invalid": "END Nhọrọ adịghị mma. Kpọọ *384*55# iji malite.",
     },
     "pcm": {
-        "main_menu": (
-            "CON Pick wetin you want:\n1. Crop Advice\n2. Weather News\n"
-            "3. Market Price\n4. My Data\n5. Voice Help"
-        ),
-        "crop_menu": (
-            "CON Crop Advice:\n1. Top Crops\n2. Search by Name\n"
-            "3. Send Photo\n4. Voice Talk"
-        ),
+        "main_menu": "CON Pick wetin you want:\n1. Crop Advice\n2. Weather News\n3. Market Price\n4. My Data\n5. Voice Help",
+        "crop_menu": "CON Crop Advice:\n1. Top Crops\n2. Search by Name\n3. Send Photo\n4. Voice Talk",
         "choose_crop": "CON Pick crop:\n",
         "type_crop": "CON Type the crop name\n(e.g. sorghum, millet, pepper):",
         "describe_problem": "CON Tell us wetin do your {} in small small words:",
@@ -165,20 +149,22 @@ I18N = {
         "ivr_failed": "END Call no fit start. Try again or send SMS.",
         "weather_info": "END Weather update dey come.",
         "market_info": "CON Market Price dey come.\n0. Go back",
-        "ndpa_menu": (
-            "CON My Data (NDPA 2023):\n1. See my data\n2. Fix my data\n"
-            "3. Delete my data\n4. Privacy Policy"
-        ),
+        "ndpa_menu": "CON My Data (NDPA 2023):\n1. See my data\n2. Fix my data\n3. Delete my data\n4. Privacy Policy",
         "ndpa_view": "END Your old questions dey safe under NDPA 2023.",
         "ndpa_rectify": "END Send correction go support@agrion.ng.",
         "ndpa_erase_confirm": "CON You sure say you wan delete everything?\n1. Yes, Delete\n2. Cancel",
         "ndpa_erase_done": "END We don delete your data. Thanks for using Agrion.",
         "ndpa_policy": "END Full policy: agrion.ng/privacy",
-        "sms_sent": "END Advice don reach your phone via SMS. Check am.",
+        "sms_sent": "END Advice don record well.\nYour Code na: ",
         "sms_failed": "END {}",
         "invalid": "END Option no correct. Dial *384*55# to start again.",
-    },
+    }
 }
+
+
+def _generate_coupon_code() -> str:
+    """Generates a unique 6-character uppercase alphanumeric code."""
+    return "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
 
 
 def get_localized_string(lang_code: str, key: str) -> str:
@@ -206,7 +192,6 @@ def trigger_voice_callback(phone_number: str) -> bool:
 
 
 def send_sms_reply(phone_number: str, message: str) -> bool:
-    from datetime import datetime
     if len(message) > SMS_MAX_CHARS:
         message = message[:SMS_MAX_CHARS - 3].rstrip() + "..."
     log_path = os.path.join(os.path.dirname(__file__), "..", "sms_outbox.log")
@@ -226,13 +211,13 @@ def _run_advice_and_sms_worker(
     crop: str,
     question: str,
     lang: str,
+    coupon_code: str,  # Injected coupon key
 ) -> None:
-    """Safely runs the heavy AI pipelines inside a separate background thread."""
+    """Safely runs AI generation and explicitly saves payload into sms_outbox.json"""
     try:
         if not has_consented(phone_hash):
             record_consent(phone_hash, True)
 
-        # Heavy context & advice generations happen here safely detached from the USSD request timeout
         context = get_or_generate_context(crop, get_crop_context)
         advice  = get_advice(question, context, language_hint=lang, channel="sms")
 
@@ -240,10 +225,32 @@ def _run_advice_and_sms_worker(
             advice = "Could not generate advice. Please describe the problem differently."
 
         log_farmer_query(phone_hash, crop, question, channel="ussd")
-
-        # Always log to SMS outbox for delivery processing since it is running asynchronously
         send_sms_reply(phone_number, advice)
         store_advice(phone_hash, advice)
+
+        # ── EXPLICIT SAVE TO SMS_OUTBOX.JSON FOR THE SMS SIMULATOR BYPASS ──
+        json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sms_outbox.json"))
+        outbox_data = {}
+        
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    outbox_data = json.load(f)
+            except Exception:
+                outbox_data = {}
+
+        # Construct payload schema identical to your existing JSON structure
+        outbox_data[coupon_code] = {
+            "phone_hash": phone_hash,
+            "advice": advice,
+            "ts": datetime.now().isoformat(),
+            "retrieved": False
+        }
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(outbox_data, f, indent=4)
+            
+        logging.info(f"[ussd_worker] Successfully auto-saved code {coupon_code} to system memory.")
 
     except Exception as e:
         logging.error(f"[ussd_worker] Background pipeline exception: {e}")
@@ -323,20 +330,21 @@ def ussd_callback():
 
         elif len(steps) >= 5:
             sub_choice = steps[2]
+            
+            # Generate the unique coupon code immediately in the parent stream
+            coupon_code = _generate_coupon_code()
 
             if sub_choice == "1":
                 try:
                     crop     = CROPS[int(steps[3]) - 1]
                     question = " ".join(steps[4:])
                     
-                    # Offload the execution to a background thread to prevent gateway timeout
                     threading.Thread(
                         target=_run_advice_and_sms_worker,
-                        args=(phone_number, phone_hash, crop, question, lang)
+                        args=(phone_number, phone_hash, crop, question, lang, coupon_code)
                     ).start()
                     
-                    # Instantly return immediate confirmation screen to Africa's Talking
-                    response = get_localized_string(lang, "sms_sent")
+                    response = get_localized_string(lang, "sms_sent") + coupon_code
                 except (ValueError, IndexError):
                     response = get_localized_string(lang, "invalid")
 
@@ -344,14 +352,12 @@ def ussd_callback():
                 crop     = steps[3].strip().lower()
                 question = " ".join(steps[4:])
                 
-                # Offload the execution to a background thread to prevent gateway timeout
                 threading.Thread(
                     target=_run_advice_and_sms_worker,
-                    args=(phone_number, phone_hash, crop, question, lang)
-                    ).start()
+                    args=(phone_number, phone_hash, crop, question, lang, coupon_code)
+                ).start()
                 
-                # Instantly return immediate confirmation screen to Africa's Talking
-                response = get_localized_string(lang, "sms_sent")
+                response = get_localized_string(lang, "sms_sent") + coupon_code
 
             else:
                 response = get_localized_string(lang, "invalid")

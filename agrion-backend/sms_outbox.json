@@ -1,38 +1,128 @@
 {
-  "NUH0DZ": {
-    "phone_hash": "a971099a51c0d367",
-    "advice": "Maize is turning black. It could be due to a disease called maize streak virus (MSV). MSV is a viral disease that affects maize plants and causes t...",
-    "ts": "2026-06-26T12:44:45.034957",
-    "retrieved": false
-  },
-  "L6UYKQ": {
-    "phone_hash": "a971099a51c0d367",
-    "advice": "Cassava mosaic virus can cause blue or purple coloration of the inside of the tuber. You should remove and destroy any affected plants. \ud83e\udd96\n</think>s...",
-    "ts": "2026-06-26T12:47:47.414593",
-    "retrieved": false
-  },
-  "QJXZ64": {
-    "phone_hash": "a971099a51c0d367",
-    "advice": "Crop: rice. Notes: Needs flooded fields; transplant at 21 days; watch for stem borers.. Pests: stem borer.\nQuestion:",
-    "ts": "2026-06-26T13:07:52.958613",
-    "retrieved": false
-  },
-  "Z8B636": {
-    "phone_hash": "a971099a51c0d367",
-    "advice": "The rice is becoming more brown. It is likely that the rice is infected with stem borer. You should check the rice for stem borer and treat it with...",
-    "ts": "2026-06-26T13:12:58.214584",
-    "retrieved": false
-  },
-  "1M5US1": {
-    "phone_hash": "a971099a51c0d367",
-    "advice": "Crop: tea. Notes: Detail context for: tea",
-    "ts": "2026-06-26T13:48:48.044435",
-    "retrieved": false
-  },
-  "PTQ9YY": {
-    "phone_hash": "a971099a51c0d367",
-    "advice": "system\nYou are Agrion, an agricultural advisor for smallholder farmers in Nigeria. Answer ONLY the farmer's question in 2 short plain sentences. Do...",
-    "ts": "2026-06-26T14:10:16.468794",
-    "retrieved": true
-  }
+    "NUH0DZ": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Maize is turning black. It could be due to a disease called maize streak virus (MSV). MSV is a viral disease that affects maize plants and causes t...",
+        "ts": "2026-06-26T12:44:45.034957",
+        "retrieved": false
+    },
+    "L6UYKQ": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Cassava mosaic virus can cause blue or purple coloration of the inside of the tuber. You should remove and destroy any affected plants. \ud83e\udd96\n</think>s...",
+        "ts": "2026-06-26T12:47:47.414593",
+        "retrieved": false
+    },
+    "QJXZ64": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Crop: rice. Notes: Needs flooded fields; transplant at 21 days; watch for stem borers.. Pests: stem borer.\nQuestion:",
+        "ts": "2026-06-26T13:07:52.958613",
+        "retrieved": false
+    },
+    "Z8B636": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "The rice is becoming more brown. It is likely that the rice is infected with stem borer. You should check the rice for stem borer and treat it with...",
+        "ts": "2026-06-26T13:12:58.214584",
+        "retrieved": false
+    },
+    "1M5US1": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Crop: tea. Notes: Detail context for: tea",
+        "ts": "2026-06-26T13:48:48.044435",
+        "retrieved": false
+    },
+    "PTQ9YY": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "system\nYou are Agrion, an agricultural advisor for smallholder farmers in Nigeria. Answer ONLY the farmer's question in 2 short plain sentences. Do...",
+        "ts": "2026-06-26T14:10:16.468794",
+        "retrieved": true
+    },
+    "PUTTG7": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Advisory engine unavailable. Try again or call your local extension officer.",
+        "ts": "2026-06-26T19:00:55.521852",
+        "retrieved": true
+    },
+    "6L1AX3": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Advisory engine unavailable. Try again or call your local extension officer.",
+        "ts": "2026-06-26T19:06:32.578185",
+        "retrieved": true
+    },
+    "HZE3LQ": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "You are Agrion, an agricultural advisor for smallholder farmers in Nigeria. Answer ONLY the farmer's question in 2 short plain sentences. Do NOT re...",
+        "ts": "2026-06-26T19:12:54.155093",
+        "retrieved": true
+    },
+    "HGDACO": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Banana plants may take longer to produce fruits due to environmental factors like temperature, sunlight, or soil conditions. Ensure optimal growing...",
+        "ts": "2026-06-26T19:27:45.579436",
+        "retrieved": false
+    },
+    "4KGCR9": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Banana plants may take longer to produce fruits due to environmental factors like temperature, sunlight, or soil conditions. Ensure optimal growing...",
+        "ts": "2026-06-26T19:27:45.598499",
+        "retrieved": true
+    },
+    "L6XKFZ": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "The seeds may be old or not viable. Try new seeds and ensure they are planted in well-prepared soil.",
+        "ts": "2026-06-26T19:33:23.868669",
+        "retrieved": false
+    },
+    "WOP1L0": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "The seeds may be old or not viable. Try new seeds and ensure they are planted in well-prepared soil.",
+        "ts": "2026-06-26T19:33:23.886203",
+        "retrieved": true
+    },
+    "LB3X6P": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Increase fertilizer application and ensure proper irrigation to promote seed development.",
+        "ts": "2026-06-26T19:42:12.922140",
+        "retrieved": false
+    },
+    "4AQ0Y2": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Increase fertilizer application and ensure proper irrigation to promote seed development.",
+        "ts": "2026-06-26T19:42:12.938082",
+        "retrieved": true
+    },
+    "BMT606": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "You are Agrion, an agricultural advisor for smallholder farmers in Nigeria. Answer ONLY the farmer's question in 2 short plain sentences. Do NOT re...",
+        "ts": "2026-06-26T19:47:13.851478",
+        "retrieved": false
+    },
+    "BDN5JP": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "You are Agrion, an agricultural advisor for smallholder farmers in Nigeria. Answer ONLY the farmer's question in 2 short plain sentences. Do NOT re...",
+        "ts": "2026-06-26T19:47:13.867493",
+        "retrieved": true
+    },
+    "ZNQLLI": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "The purple color is due to high soil pH. Apply lime or ash to lower pH and improve seed quality.",
+        "ts": "2026-06-26T19:49:36.156865",
+        "retrieved": false
+    },
+    "0V809N": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "The purple color is due to high soil pH. Apply lime or ash to lower pH and improve seed quality.",
+        "ts": "2026-06-26T19:49:36.170561",
+        "retrieved": true
+    },
+    "VL7V7H": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Use certified cuttings and ensure proper spacing for better growth.",
+        "ts": "2026-06-26T19:52:26.492724",
+        "retrieved": false
+    },
+    "XDL5SE": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Use certified cuttings and ensure proper spacing for better growth.",
+        "ts": "2026-06-26T19:52:26.505409",
+        "retrieved": true
+    }
 }
