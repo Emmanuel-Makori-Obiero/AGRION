@@ -26,6 +26,7 @@ class FarmerState(TypedDict):
 
     # --- Populated by the intake node ---
     crop_focus: Optional[str]
+    region: Optional[str]  # Nigerian state/region, used to ground forecasts
 
     # --- Populated by the router node ---
     domain_intent: Optional[DomainIntent]
@@ -44,6 +45,7 @@ def initial_state(
     channel_type: ChannelType,
     preferred_language: str = "en",
     crop_focus: Optional[str] = None,
+    region: Optional[str] = None,
 ) -> FarmerState:
     """Build a fresh state for a new turn.
 
@@ -56,6 +58,7 @@ def initial_state(
         user_input=user_input,
         channel_type=channel_type,
         crop_focus=crop_focus,
+        region=region,
         domain_intent=None,
         expert_reasoning=None,
         final_ui_response=None,

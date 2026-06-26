@@ -27,9 +27,11 @@ From the farmer's message, determine:
    and English, prefer "Pidgin".
 2. crop_focus: the single crop the farmer is asking about (e.g. "Rice",
    "Maize", "Cassava", "Tomato"). Use null if no crop is mentioned.
+3. region: the Nigerian state/region the farmer mentions (e.g. "Kano",
+   "Kaduna", "Oyo"). Use null if no region is mentioned.
 
 Reply with ONLY a JSON object:
-{"preferred_language": "...", "crop_focus": "..." or null}"""
+{"preferred_language": "...", "crop_focus": "..." or null, "region": "..." or null}"""
 
 
 async def intake_node(state: FarmerState) -> dict:
@@ -46,10 +48,12 @@ async def intake_node(state: FarmerState) -> dict:
         language = (parsed.get("preferred_language") or "").strip()
         crop = parsed.get("crop_focus")
         crop = crop.strip().title() if isinstance(crop, str) and crop else None
+        region = parsed.get("region")
+        region = region.strip().title() if isinstance(region, str) and region else None
     except (ValueError, KeyError) as exc:
-        # Degrade gracefully: keep the caller-supplied language, no crop.
+        # Degrade gracefully: keep the caller-supplied language, no crop/region.
         logger.warning("intake parse failed (%s); using defaults", exc)
-        language, crop = "", None
+        language, crop, region = "", None, None
 
     update: dict = {}
     # Only overwrite the language if intake actually detected one; otherwise
@@ -58,4 +62,6 @@ async def intake_node(state: FarmerState) -> dict:
         update["preferred_language"] = language
     if crop:
         update["crop_focus"] = crop
+    if region:
+        update["region"] = region
     return update

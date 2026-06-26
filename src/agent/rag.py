@@ -15,6 +15,7 @@ then the experts call `get_retriever()` at query time.
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 from langchain_chroma import Chroma
@@ -29,7 +30,10 @@ logger = logging.getLogger(__name__)
 COLLECTION_NAME = "agri_knowledge"
 
 
+@lru_cache(maxsize=1)
 def _embeddings() -> HuggingFaceEmbeddings:
+    # Cached so the sentence-transformers model is loaded into memory once per
+    # process instead of on every retrieval (a multi-second cold start each).
     settings = get_settings()
     return HuggingFaceEmbeddings(model_name=settings.embedding_model)
 
@@ -75,8 +79,13 @@ def build_vectorstore() -> Chroma:
     return store
 
 
+@lru_cache(maxsize=1)
 def get_vectorstore() -> Chroma:
-    """Open the existing persistent store (does not ingest)."""
+    """Open the existing persistent store (does not ingest).
+
+    Cached: the Chroma client and its collection handle are opened once and
+    reused across requests rather than rebuilt on every call.
+    """
     settings = get_settings()
     return Chroma(
         collection_name=COLLECTION_NAME,
@@ -85,8 +94,13 @@ def get_vectorstore() -> Chroma:
     )
 
 
+@lru_cache(maxsize=4)
 def get_retriever(k: int = 4):
-    """Return a retriever over the knowledge base, fetching the top-``k`` chunks."""
+    """Return a retriever over the knowledge base, fetching the top-``k`` chunks.
+
+    Cached per ``k`` so repeated calls reuse the same retriever (and the warm
+    embedding model and vector store behind it).
+    """
     return get_vectorstore().as_retriever(search_kwargs={"k": k})
 
 
