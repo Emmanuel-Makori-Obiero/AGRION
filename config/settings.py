@@ -35,10 +35,41 @@ class Settings(BaseSettings):
         default="meta-llama/Meta-Llama-3.1-8B-Instruct"
     )
 
+    # Vision LLM (MMS diagnostics) — OpenAI-compatible vision endpoint
+    vision_api_key: str = Field(default="")
+    vision_base_url: str = Field(default="https://api.openai.com/v1")
+    vision_model: str = Field(default="gpt-4o")
+    vision_request_timeout: float = Field(default=30.0)
+    vision_min_confidence: float = Field(default=0.45)
+    # Local enhancement / quality-gate tuning
+    vision_blur_threshold: float = Field(default=60.0)  # Laplacian-variance floor
+    vision_min_brightness: float = Field(default=35.0)  # mean luma floor (0-255)
+    vision_min_edge: int = Field(default=200)  # min shorter-side pixels
+    vision_target_long_edge: int = Field(default=1024)
+    vision_jpeg_quality: int = Field(default=90)
+    # Optional basic-auth for fetching MMS media (Twilio media URLs require it).
+    twilio_account_sid: str = Field(default="")
+    twilio_auth_token: str = Field(default="")
+
     # ElevenLabs (text-to-speech)
     elevenlabs_api_key: str = Field(default="")
-    elevenlabs_voice_id: str = Field(default="")
+    elevenlabs_voice_id: str = Field(default="")  # default/fallback voice
     elevenlabs_base_url: str = Field(default="https://api.elevenlabs.io/v1")
+    # Per-dialect voice ids; blank values fall back to elevenlabs_voice_id.
+    elevenlabs_voice_hausa: str = Field(default="")
+    elevenlabs_voice_yoruba: str = Field(default="")
+    elevenlabs_voice_igbo: str = Field(default="")
+    elevenlabs_voice_pidgin: str = Field(default="")
+    elevenlabs_voice_english: str = Field(default="")
+
+    # Speech-to-text (voice bridge) — OpenAI-compatible Whisper endpoint
+    stt_api_key: str = Field(default="")
+    stt_base_url: str = Field(default="https://api.openai.com/v1")
+    stt_model: str = Field(default="whisper-1")
+
+    # Public base URL Africa's Talking can reach to play back audio (e.g. an
+    # ngrok/CDN host). Falls back to the request's own base URL when blank.
+    public_base_url: str = Field(default="")
 
     # Africa's Talking
     at_username: str = Field(default="sandbox")

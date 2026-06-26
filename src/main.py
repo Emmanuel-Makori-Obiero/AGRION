@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from config.settings import get_settings
 from src.agent.checkpoint import open_checkpointer
 from src.agent.graph import build_graph
-from src.api.v1 import genui, ivr, ussd, webhooks
+from src.api.v1 import genui, ivr, ussd, voice_bridge, webhooks
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level.upper())
@@ -44,6 +44,7 @@ app = FastAPI(
 
 app.include_router(ussd.router, prefix="/api/v1", tags=["ussd"])
 app.include_router(ivr.router, prefix="/api/v1", tags=["ivr"])
+app.include_router(voice_bridge.router, prefix="/api/v1", tags=["voice-bridge"])
 app.include_router(genui.router, prefix="/api/v1", tags=["genui"])
 app.include_router(webhooks.router, prefix="/api/v1", tags=["agent"])
 

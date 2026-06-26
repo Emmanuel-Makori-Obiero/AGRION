@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 CHANNEL_LIMITS: dict[ChannelType, int | None] = {
     "sms": 160,
     "ussd": 182,
+    "voice": 320,  # ~2-3 spoken sentences; trimmed if the model overshoots
     "chatbot": None,
 }
 
@@ -44,6 +45,15 @@ _PROFILES: dict[ChannelType, str] = {
         "- Each option starts with a single digit, e.g. '1. Plant now'.\n"
         "- No markdown. Keep options terse. Translate into the farmer's "
         "preferred language."
+    ),
+    "voice": (
+        "CHANNEL: Voice (IVR readout).\n"
+        "- This text will be SPOKEN ALOUD by a text-to-speech engine.\n"
+        "- Keep it short: 2-3 plain sentences. No lists, markdown, or symbols.\n"
+        "- Use simple words the farmer can follow by ear; write numbers and "
+        "units as words (e.g. 'twenty centimetres').\n"
+        "- Give one clear action. Translate into the farmer's preferred "
+        "language/dialect."
     ),
     "chatbot": (
         "CHANNEL: Web chatbot.\n"

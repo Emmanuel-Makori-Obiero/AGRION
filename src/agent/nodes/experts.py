@@ -48,6 +48,16 @@ def _format_forecast(forecast: dict | None) -> str:
     )
 
 
+def _format_observations(observations: list[dict]) -> str:
+    """Render farmer-reported conditions (MMS field signal) ranked by frequency."""
+    if not observations:
+        return "(no recent field reports for this crop)"
+    return "\n".join(
+        f"- {o['condition']} ({o['kind'].lower()}): {o['reports']} report(s)"
+        for o in observations
+    )
+
+
 _AGRONOMY_SYSTEM = """You are a senior agronomist advising Nigerian smallholder
 farmers. You are given two evidence sources: authoritative IITA knowledge-graph
 facts and supporting manual excerpts. Use them to produce a highly accurate,
@@ -59,6 +69,9 @@ IMPORTANT:
 - Ground every recommendation in the evidence. The IITA knowledge-graph facts
   are authoritative; prefer them when they conflict with the manual excerpts.
   If both are silent, say so rather than inventing specifics.
+- Treat the recent field reports as corroborating local prevalence signal, not
+  proof: if a frequently reported pest/disease fits the farmer's symptoms, raise
+  its likelihood, but do not diagnose it on the report count alone.
 - Prefer locally available, low-cost inputs suited to Nigerian conditions."""
 
 
@@ -76,12 +89,18 @@ async def agronomy_expert(state: FarmerState) -> dict:
 
     crop = state.get("crop_focus")
 
-    # Structured graph facts. The Neo4j driver is synchronous, so run it off the
-    # event loop to avoid blocking other concurrent turns.
+    # Structured graph facts plus farmer-reported field signal. The Neo4j driver
+    # is synchronous, so run it off the event loop to avoid blocking other turns.
+    region = state.get("region")
     practices: list[dict] = []
+    observations: list[dict] = []
     if crop:
         try:
             practices = await asyncio.to_thread(graph_service.get_practices, crop)
+            # Scope field reports to the asking farmer's region when known.
+            observations = await asyncio.to_thread(
+                graph_service.get_observed_conditions, crop, region
+            )
         except Exception as exc:  # graph unavailable — fall back to vector only
             logger.warning("graph lookup failed (%s); proceeding without it", exc)
 
@@ -100,6 +119,9 @@ async def agronomy_expert(state: FarmerState) -> dict:
                 f"Crop: {crop or 'unspecified'}\n"
                 f"Farmer's problem: {state['user_input']}\n\n"
                 f"IITA knowledge-graph facts:\n{_format_practices(practices)}\n\n"
+                f"Recent field reports from farmers "
+                f"({'in ' + region if region else 'all regions'}, "
+                f"most frequent first):\n{_format_observations(observations)}\n\n"
                 f"Retrieved manual excerpts:\n{_format_context(docs)}"
             )
         ),

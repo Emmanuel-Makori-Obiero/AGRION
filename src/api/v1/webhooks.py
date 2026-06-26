@@ -11,22 +11,73 @@ lifespan in ``src/main.py``), so all requests share one checkpointer.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
+import httpx
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
+from config.settings import get_settings
 from src.agent.graph import run_turn
+from src.services.graph_service import graph_service
+from src.vision import Diagnosis, VisionStatus, diagnose_image
+from src.vision.sms import FALLBACK_ERROR
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Sent when an MMS arrives with no usable image attachment.
+NO_MEDIA_MSG = (
+    "No photo found in your message. Please send one clear, close-up photo of "
+    "the affected plant."
+)
+
 
 def _graph(request: Request):
     """Fetch the compiled agent graph stored on app startup."""
     return request.app.state.agent_graph
+
+
+async def _fetch_media(url: str) -> bytes:
+    """Download the MMS attachment, using Twilio basic-auth when configured.
+
+    Twilio media URLs require AccountSid/AuthToken basic auth; Africa's Talking
+    and other public/signed URLs do not, so auth is applied only when set.
+    """
+    settings = get_settings()
+    auth: tuple[str, str] | None = None
+    if settings.twilio_account_sid and settings.twilio_auth_token:
+        auth = (settings.twilio_account_sid, settings.twilio_auth_token)
+
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+        resp = await client.get(url, auth=auth)
+        resp.raise_for_status()
+        return resp.content
+
+
+async def _persist_diagnosis(phone: str, diagnosis: Diagnosis) -> None:
+    """Best-effort write of a confident diagnosis into Neo4j.
+
+    Runs the synchronous driver off the event loop and swallows failures: a
+    graph outage must never block or fail the farmer's SMS reply.
+    """
+    try:
+        obs_id = await asyncio.to_thread(
+            graph_service.save_diagnosis,
+            phone=phone,
+            subject_type=diagnosis.subject_type,
+            crop=diagnosis.crop,
+            condition=diagnosis.condition,
+            severity=diagnosis.severity,
+            confidence=diagnosis.confidence,
+            recommendation=diagnosis.recommendation,
+        )
+        logger.info("mms: persisted observation %s for %s", obs_id, phone)
+    except Exception as exc:  # noqa: BLE001 — persistence is non-critical
+        logger.error("mms: failed to persist diagnosis for %s: %s", phone, exc)
 
 
 # --------------------------------------------------------------------------- #
@@ -81,6 +132,46 @@ async def sms_webhook(
     #   return Response(f"<Response><Message>{answer}</Message></Response>",
     #                   media_type="application/xml")
     return PlainTextResponse(answer)
+
+
+# --------------------------------------------------------------------------- #
+# MMS — inbound picture message. Providers post a media URL, not the bytes, so
+# we download the image, run the vision-diagnostics pipeline, and reply by SMS.
+# --------------------------------------------------------------------------- #
+@router.post("/webhook/mms")
+async def mms_webhook(
+    request: Request,
+    # Africa's Talking uses 'from'/'mediaUrl'; Twilio uses 'From'/'MediaUrl0'.
+    from_at: str | None = Form(default=None, alias="from"),
+    from_twilio: str | None = Form(default=None, alias="From"),
+    media_at: str | None = Form(default=None, alias="mediaUrl"),
+    media_twilio: str | None = Form(default=None, alias="MediaUrl0"),
+) -> Response:
+    phone = from_at or from_twilio or ""
+    media_url = media_at or media_twilio
+    if not phone:
+        return PlainTextResponse("Missing sender number", status_code=400)
+    if not media_url:
+        return PlainTextResponse(NO_MEDIA_MSG)
+
+    try:
+        image_bytes = await _fetch_media(media_url)
+    except httpx.HTTPError as exc:
+        logger.error("mms: media download failed for %s: %s", phone, exc)
+        return PlainTextResponse(FALLBACK_ERROR)
+
+    result = await diagnose_image(image_bytes)
+    logger.info("mms diagnosis: status=%s phone=%s", result.status.value, phone)
+
+    # Persist only confident identifications so the graph accumulates real
+    # field signal rather than the model's "unknown"/low-confidence guesses.
+    if result.status is VisionStatus.OK and result.diagnosis is not None:
+        await _persist_diagnosis(phone, result.diagnosis)
+
+    # Plain text is valid for Africa's Talking. For Twilio, wrap in TwiML:
+    #   return Response(f"<Response><Message>{result.sms}</Message></Response>",
+    #                   media_type="application/xml")
+    return PlainTextResponse(result.sms)
 
 
 # --------------------------------------------------------------------------- #

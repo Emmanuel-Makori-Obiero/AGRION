@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Literal, Optional, TypedDict
 
 # Discriminators reused across nodes, edges, and the API layer.
-ChannelType = Literal["ussd", "sms", "chatbot"]
+ChannelType = Literal["ussd", "sms", "chatbot", "voice"]
 DomainIntent = Literal["agronomy", "climate", "finance"]
 
 

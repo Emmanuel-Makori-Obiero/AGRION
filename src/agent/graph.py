@@ -7,6 +7,9 @@ thread id and return the formatted, user-facing string.
 
 from __future__ import annotations
 
+import asyncio
+import logging
+
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -20,6 +23,8 @@ from src.agent.nodes.formatter import channel_formatter
 from src.agent.nodes.intake import intake_node
 from src.agent.nodes.router import route_by_intent, router_node
 from src.agent.state import ChannelType, FarmerState, initial_state
+
+logger = logging.getLogger(__name__)
 
 
 def build_graph(checkpointer) -> CompiledStateGraph:
@@ -77,4 +82,18 @@ async def run_turn(
         crop_focus=crop_focus,
     )
     result = await graph.ainvoke(state, config=thread_config(phone_number))
+
+    # Persist the farmer's detected region (best-effort) so other channels —
+    # notably the region-less MMS pipeline — can tag observations with it.
+    region = result.get("region")
+    if region:
+        try:
+            from src.services.graph_service import graph_service
+
+            await asyncio.to_thread(
+                graph_service.upsert_farmer_region, phone_number, region
+            )
+        except Exception as exc:  # non-critical — never fail the farmer's turn
+            logger.warning("failed to persist farmer region (%s)", exc)
+
     return result["final_ui_response"] or ""

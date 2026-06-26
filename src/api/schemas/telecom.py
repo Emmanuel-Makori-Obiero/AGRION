@@ -30,3 +30,23 @@ class IvrRequest(BaseModel):
     dtmf_digits: str | None = Field(alias="dtmfDigits", default=None)
 
     model_config = {"populate_by_name": True}
+
+
+class VoiceCallRequest(BaseModel):
+    """Inbound Africa's Talking Voice callback for the STT/TTS bridge.
+
+    The same URL is hit at every step of the call, distinguished by which
+    optional fields are present: nothing (dial-in), ``dtmf_digits`` (menu
+    answered), or ``recording_url`` (caller audio captured).
+    """
+
+    session_id: str = Field(alias="sessionId")
+    is_active: str = Field(alias="isActive", default="1")
+    caller_number: str | None = Field(alias="callerNumber", default=None)
+    destination_number: str | None = Field(alias="destinationNumber", default=None)
+    direction: str = Field(alias="direction", default="Inbound")
+    dtmf_digits: str | None = Field(alias="dtmfDigits", default=None)
+    recording_url: str | None = Field(alias="recordingUrl", default=None)
+    duration_seconds: str | None = Field(alias="durationInSeconds", default=None)
+
+    model_config = {"populate_by_name": True}
