@@ -1,5 +1,5 @@
 """
-Featherless AI wrapper utilizing McGill-NLP/AfriqueQwen-4B.
+Featherless AI wrapper utilizing McGill-NLP/AfriqueQwen-8B.
 Implements translate-after-generate and memory caching for graph nodes.
 """
 import os
@@ -15,7 +15,7 @@ FALLBACK_ADVICE = (
 
 USSD_MAX_CHARS = 160   # USSD hard cap (operators enforce 160–182; use 160 safe floor)
 SMS_MAX_CHARS  = 150   # Single-SMS budget with AT overhead headroom
-DEFAULT_MODEL  = "McGill-NLP/AfriqueQwen-4B"
+DEFAULT_MODEL  = "McGill-NLP/AfriqueQwen-8B"
 REQUEST_TIMEOUT_SECONDS = 15.0
 
 
