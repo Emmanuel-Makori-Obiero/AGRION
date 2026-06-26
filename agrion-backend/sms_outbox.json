@@ -124,5 +124,53 @@
         "advice": "Use certified cuttings and ensure proper spacing for better growth.",
         "ts": "2026-06-26T19:52:26.505409",
         "retrieved": true
+    },
+    "4HLJV9": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Wait for seedlings to grow, then flood the field. Keep it flooded until transplanting.",
+        "ts": "2026-06-26T20:20:11.288835",
+        "retrieved": false
+    },
+    "T48BDB": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Wait for seedlings to grow, then flood the field. Keep it flooded until transplanting.",
+        "ts": "2026-06-26T20:20:11.311992",
+        "retrieved": false
+    },
+    "LIRB99": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Agrion\nIt's likely a zinc deficiency. Apply zinc sulfate at 5kg/ha.",
+        "ts": "2026-06-26T21:21:59.887485",
+        "retrieved": false
+    },
+    "Y9H15T": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Agrion\nIt's likely a zinc deficiency. Apply zinc sulfate at 5kg/ha.",
+        "ts": "2026-06-26T21:21:59.902265",
+        "retrieved": false
+    },
+    "335QYH": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Advisory engine unavailable. Try again or call your local extension officer.",
+        "ts": "2026-06-26T21:46:50.052910",
+        "retrieved": false
+    },
+    "06I4KO": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Advisory engine unavailable. Try again or call your local extension officer.",
+        "ts": "2026-06-26T21:46:52.307972",
+        "retrieved": false
+    },
+    "DAF5QZ": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Maize is purple because it is infected by a fungus called purple leaf blight. Purple leaf blight is a fungal disease that affects maize plants. It...",
+        "ts": "2026-06-26T21:53:28.074998",
+        "retrieved": false
+    },
+    "HUVUCO": {
+        "phone_hash": "a971099a51c0d367",
+        "advice": "Maize is purple because it is infected by a fungus called purple leaf blight. Purple leaf blight is a fungal disease that affects maize plants. It...",
+        "ts": "2026-06-26T21:53:31.890536",
+        "retrieved": false
     }
 }

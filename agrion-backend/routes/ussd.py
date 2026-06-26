@@ -10,6 +10,7 @@ import string     # Added for character sets
 import json       # Added to update sms_outbox.json directly
 from datetime import datetime
 from flask import Blueprint, Response, request
+from services.sms_store import save_sms_token
 
 from services.ai_engine import get_advice, get_or_generate_context
 from services.consent import has_consented, hash_phone, record_consent
@@ -89,7 +90,6 @@ I18N = {
         "sms_failed": "END {}",
         "invalid": "END Zaɓi mara inganci. Buga *384*55# don farawa.",
     },
-    # (Keep yo, ig, and pcm structures completely identical to your layout)
     "yo": {
         "main_menu": "CON Yan iṣẹ:\n1. Imọran Irugbin\n2. Iroyin Oju Ojo\n3. Iye Oja\n4. Data Mi\n5. Iranlowo Ohun",
         "crop_menu": "CON Imọran Irugbin:\n1. Awon Irugbin Akọkọ\n2. Wa nipasẹ Orukọ\n3. Damo nipasẹ Foto\n4. Apejuwe Ohun",
@@ -211,24 +211,42 @@ def _run_advice_and_sms_worker(
     crop: str,
     question: str,
     lang: str,
-    coupon_code: str,  # Injected coupon key
+    coupon_code: str,
 ) -> None:
-    """Safely runs AI generation and explicitly saves payload into sms_outbox.json"""
+    """Safely runs AI generation with 503 fault tolerance and direct Neo4j persistence."""
     try:
         if not has_consented(phone_hash):
             record_consent(phone_hash, True)
 
         context = get_or_generate_context(crop, get_crop_context)
-        advice  = get_advice(question, context, language_hint=lang, channel="sms")
+        
+        # ── FAULT TOLERANCE CAP: Catch 503 Capacity/Server Errors ──
+        try:
+            advice = get_advice(question, context, language_hint=lang, channel="sms")
+        except Exception as ai_err:
+            logging.error(f"[ussd_worker] AI Engine down (503/Timeout): {ai_err}")
+            # Dynamic fallback message to keep the pipeline moving
+            advice = (
+                "Agrion AI is busy right now. We received your query about {} "
+                "and will update you shortly. Try again in 5 mins."
+            ).format(crop.title())
 
         if not advice:
-            advice = "Could not generate advice. Please describe the problem differently."
+            advice = f"Could not generate advice for {crop.title()}. Please describe the problem differently."
 
+        # Log and store metrics
         log_farmer_query(phone_hash, crop, question, channel="ussd")
         send_sms_reply(phone_number, advice)
         store_advice(phone_hash, advice)
 
-        # ── EXPLICIT SAVE TO SMS_OUTBOX.JSON FOR THE SMS SIMULATOR BYPASS ──
+        # ── DIRECT RECONCILIATION TO PERSISTENT NEO4J GRAPH CLUSTER ──
+        try:
+            save_sms_token(coupon_code, advice, phone_number)
+            logging.info(f"[ussd_worker] Persistent Graph Pass confirmed for code {coupon_code}.")
+        except Exception as graph_err:
+            logging.error(f"[ussd_worker] Graph pass intercept failed safely: {graph_err}")
+
+        # ── EXPLICIT SAVE TO SMS_OUTBOX.JSON FOR OLD COUPLING FALLBACKS ──
         json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sms_outbox.json"))
         outbox_data = {}
         
@@ -239,12 +257,11 @@ def _run_advice_and_sms_worker(
             except Exception:
                 outbox_data = {}
 
-        # Construct payload schema identical to your existing JSON structure
         outbox_data[coupon_code] = {
             "phone_hash": phone_hash,
-            "advice": advice,
-            "ts": datetime.now().isoformat(),
-            "retrieved": False
+            "advice":     advice,
+            "ts":         datetime.now().isoformat(),
+            "retrieved":  False
         }
 
         with open(json_path, "w", encoding="utf-8") as f:
@@ -253,8 +270,7 @@ def _run_advice_and_sms_worker(
         logging.info(f"[ussd_worker] Successfully auto-saved code {coupon_code} to system memory.")
 
     except Exception as e:
-        logging.error(f"[ussd_worker] Background pipeline exception: {e}")
-
+        logging.error(f"[ussd_worker] Severe background pipeline exception: {e}")
 
 @ussd_bp.route("/ussd", methods=["POST"])
 def ussd_callback():
@@ -355,7 +371,7 @@ def ussd_callback():
                 threading.Thread(
                     target=_run_advice_and_sms_worker,
                     args=(phone_number, phone_hash, crop, question, lang, coupon_code)
-                ).start()
+                    ).start()
                 
                 response = get_localized_string(lang, "sms_sent") + coupon_code
 
