@@ -73,32 +73,34 @@ def get_farmer_history(phone_hash: str, limit: int = 5) -> list[dict]:
     rows = run_query(query, {"phone_hash": phone_hash, "limit": limit})
     return rows or []
 
-
-def process_query_via_ai(
-    phone_hash: str,
-    question: str,
-    crop: str | None = None,
-    region: str | None = None,
-    channel: str = "SMS",
-) -> str:
-    """USSD → KG → AI → SMS pipeline."""
-    from services.ai_engine import get_advice   # local import avoids circular dep
-
+def get_all_regions() -> list[str]:
+    rows = run_query(
+        "MATCH (r:Region) RETURN toLower(r.name) AS name",
+        {},
+    )
+    return [row["name"] for row in rows] if rows else []
+    
+def process_query_via_ai(phone_hash, question, crop=None, region=None, channel="SMS"):
+    from services.ai_engine import get_advice
+    
     SMS_MAX = 150
+    # Define phrases that indicate a system failure
+    FALLBACK_PHRASES = ["Agrion AI is busy", "update you shortly", "try again"]
 
     if not check_farmer_consent(phone_hash):
         return "Reply YES to consent before receiving advice."[:SMS_MAX]
 
-    db_context     = get_crop_context(crop, region)
-    farmer_history = get_farmer_history(phone_hash, limit=3)
-
+    db_context = get_crop_context(crop, region)
     advice = get_advice(question, db_context, channel="sms")
 
-    if not advice:
-        advice = "Could not generate advice. Describe the problem differently."
+    # Guard: If AI returns a failure/fallback, DO NOT save to DB
+    if not advice or any(phrase in advice for phrase in FALLBACK_PHRASES):
+        return "System temporarily busy. Please try again in 5 minutes."
 
+    # If advice is good, proceed with logging
+    log_farmer_query(phone_hash, crop, question, channel)
+    
     if len(advice) > SMS_MAX:
         advice = advice[:SMS_MAX].rstrip() + "..."
-
-    log_farmer_query(phone_hash, crop, question, channel)
+        
     return advice

@@ -3,18 +3,18 @@ Africa's Talking inbound USSD webhook.
 """
 import logging
 import os
-import threading  # Added for background asynchronous tasks
+import threading
 import requests
-import secrets    # Added for secure coupon generation
-import string     # Added for character sets
-import json       # Added to update sms_outbox.json directly
+import secrets
+import string
+import json
 from datetime import datetime
 from flask import Blueprint, Response, request
 from services.sms_store import save_sms_token
 
 from services.ai_engine import get_advice, get_or_generate_context
 from services.consent import has_consented, hash_phone, record_consent
-from services.knowledge_graph import get_crop_context, log_farmer_query
+from services.knowledge_graph import get_crop_context, log_farmer_query, get_all_regions
 from services.sms_store import store_advice, is_short_enough_for_ussd
 
 ussd_bp = Blueprint("ussd", __name__)
@@ -24,6 +24,49 @@ SMS_MAX_CHARS  = 150
 
 LANGUAGES = {"1": "en", "2": "ha", "3": "yo", "4": "ig", "5": "pcm"}
 CROPS = ["maize", "cassava", "rice", "yam", "cocoa", "cowpea"]
+
+# ── WEATHER: Nigerian State → OpenWeatherMap city query string ────────────────
+# These map Neo4j state node names to OWM-friendly city queries.
+# OWM works best with "City,NG" format for disambiguation.
+NIGERIA_STATE_OWM = {
+    "abia":             "Umuahia,NG",
+    "adamawa":          "Yola,NG",
+    "akwa ibom":        "Uyo,NG",
+    "anambra":          "Awka,NG",
+    "bauchi":           "Bauchi,NG",
+    "bayelsa":          "Yenagoa,NG",
+    "benue":            "Makurdi,NG",
+    "borno":            "Maiduguri,NG",
+    "cross river":      "Calabar,NG",
+    "delta":            "Asaba,NG",
+    "ebonyi":           "Abakaliki,NG",
+    "edo":              "Benin City,NG",
+    "ekiti":            "Ado Ekiti,NG",
+    "enugu":            "Enugu,NG",
+    "fct":              "Abuja,NG",
+    "gombe":            "Gombe,NG",
+    "imo":              "Owerri,NG",
+    "jigawa":           "Dutse,NG",
+    "kaduna":           "Kaduna,NG",
+    "kano":             "Kano,NG",
+    "katsina":          "Katsina,NG",
+    "kebbi":            "Birnin Kebbi,NG",
+    "kogi":             "Lokoja,NG",
+    "kwara":            "Ilorin,NG",
+    "lagos":            "Lagos,NG",
+    "nasarawa":         "Lafia,NG",
+    "niger":            "Minna,NG",
+    "ogun":             "Abeokuta,NG",
+    "ondo":             "Akure,NG",
+    "osun":             "Osogbo,NG",
+    "oyo":              "Ibadan,NG",
+    "plateau":          "Jos,NG",
+    "rivers":           "Port Harcourt,NG",
+    "sokoto":           "Sokoto,NG",
+    "taraba":           "Jalingo,NG",
+    "yobe":             "Damaturu,NG",
+    "zamfara":          "Gusau,NG",
+}
 
 I18N = {
     "en": {
@@ -43,7 +86,10 @@ I18N = {
         "voice_info": "END Stay on the line. We are calling you now for voice advice.",
         "ivr_trigger": "END Please wait. We are calling you in your local dialect.",
         "ivr_failed": "END Could not initiate call. Try again or SMS your question.",
-        "weather_info": "END Weather updates coming soon. Check back shortly.",
+        "weather_region_menu": "CON Weather - Select your state:\n",
+        "weather_crop_prompt": "CON Enter the crop you are growing\n(e.g. maize, yam, rice):",
+        "weather_processing": "END Fetching weather & crop advice.\nYour Code: ",
+        "weather_failed": "END Could not fetch weather. Try again shortly.",
         "market_info": "CON Market Prices coming soon.\n0. Back",
         "ndpa_menu": (
             "CON My Data (NDPA 2023):\n1. View my data\n2. Rectify my data\n"
@@ -75,7 +121,10 @@ I18N = {
         "voice_info": "END Jira akan layi. Muna kirana yanzu.",
         "ivr_trigger": "END Da fatan za a jira. Muna kirana da yarenku.",
         "ivr_failed": "END Ba a iya fara kira. Sake gwadawa ko aika SMS.",
-        "weather_info": "END Bayanan yanayi na zuwa.",
+        "weather_region_menu": "CON Yanayi - Zaɓi jihar ku:\n",
+        "weather_crop_prompt": "CON Rubuta amfanin gona da kuke nomawa\n(misali: masara, doya, shinkafa):",
+        "weather_processing": "END Ana nemo yanayi da shawarar gona.\nLambar ku: ",
+        "weather_failed": "END Ba a iya samun yanayi. Sake gwadawa.",
         "market_info": "CON Farashin Kasuwa na zuwa.\n0. Koma",
         "ndpa_menu": (
             "CON Bayanan Na (NDPA 2023):\n1. Duba bayanan na\n2. Gyara bayanan na\n"
@@ -101,7 +150,10 @@ I18N = {
         "voice_info": "END Duro lori laini. A n pe o ni bayi.",
         "ivr_trigger": "END Jọwọ duro. A n pe o ni ede abinibi rẹ.",
         "ivr_failed": "END Ko le bẹrẹ ipe. Gbiyanju lẹẹkansi.",
-        "weather_info": "END Iroyin oju ojo n bọ.",
+        "weather_region_menu": "CON Oju Ojo - Yan ipinle rẹ:\n",
+        "weather_crop_prompt": "CON Tẹ orukọ irugbin ti o n gbin\n(apẹẹrẹ: agbado, isu, iresi):",
+        "weather_processing": "END A n wa oju ojo ati imoran irugbin.\nKoodu rẹ: ",
+        "weather_failed": "END Ko le gba oju ojo. Gbiyanju lẹẹkansi.",
         "market_info": "CON Iye Oja n bọ.\n0. Pada",
         "ndpa_menu": "CON Data Mi (NDPA 2023):\n1. Wo data mi\n2. Ṣe atunṣe data mi\n3. Pa data mi run\n4. Eto Ikọkọ",
         "ndpa_view": "END Awon ibeere rẹ ti o kọja ni a tọju ni aabo.",
@@ -124,7 +176,10 @@ I18N = {
         "voice_info": "END Nọrọ n'ahịrị. Anyị na-akpọ gị ugbu a.",
         "ivr_trigger": "END Biko chere. Anyị na-akpọ gị n'asụsụ obodo gị.",
         "ivr_failed": "END Enweghị ike ịmalite oku. Nwaa ọzọ.",
-        "weather_info": "END Ihe ọhụrụ ihu igwe na-abịa.",
+        "weather_region_menu": "CON Ihu Igwe - Họrọ steeti gị:\n",
+        "weather_crop_prompt": "CON Dee aha ọjị ị na-akụ\n(ọmụmaatụ: ọka, ji, osikapa):",
+        "weather_processing": "END Ana-achọta ihu igwe na ndụmọdụ ọjị.\nKoodu gị: ",
+        "weather_failed": "END Enweghị ike ịnweta ihu igwe. Nwaa ọzọ.",
         "market_info": "CON Ọnụahịa Ahịa na-abịa.\n0. Laghachi",
         "ndpa_menu": "CON Data M (NDPA 2023):\n1. Lee data m\n2. Dozie data m\n3. Hichapụ data m\n4. Iwu Nzuzo",
         "ndpa_view": "END Ajụjụ gị ndị gara aga edekọtara ha nchekwa.",
@@ -147,7 +202,10 @@ I18N = {
         "voice_info": "END Wait for call. We go ring you now.",
         "ivr_trigger": "END Wait small. We dey call you for your language.",
         "ivr_failed": "END Call no fit start. Try again or send SMS.",
-        "weather_info": "END Weather update dey come.",
+        "weather_region_menu": "CON Weather - Pick your state:\n",
+        "weather_crop_prompt": "CON Type the crop wey you dey grow\n(e.g. maize, yam, rice):",
+        "weather_processing": "END We dey fetch weather and crop advice.\nYour Code: ",
+        "weather_failed": "END Weather no show. Try again small time.",
         "market_info": "CON Market Price dey come.\n0. Go back",
         "ndpa_menu": "CON My Data (NDPA 2023):\n1. See my data\n2. Fix my data\n3. Delete my data\n4. Privacy Policy",
         "ndpa_view": "END Your old questions dey safe under NDPA 2023.",
@@ -204,7 +262,242 @@ def send_sms_reply(phone_number: str, message: str) -> bool:
         logging.error(f"[sms] Log failed: {e}")
         return False
 
- 
+
+# ── WEATHER HELPERS ───────────────────────────────────────────────────────────
+
+def _get_neo4j_regions() -> list[str]:
+    """
+    Fetches region/state names from Neo4j via get_all_regions().
+    Falls back to the full 36+FCT list if Neo4j is unavailable.
+    Expected: get_all_regions() returns a list of lowercase state name strings.
+    """
+    try:
+        regions = get_all_regions()
+        if regions:
+            return sorted([r.lower().strip() for r in regions])
+    except Exception as e:
+        logging.warning(f"[weather] Neo4j region fetch failed, using fallback: {e}")
+    return sorted(NIGERIA_STATE_OWM.keys())
+
+
+def _build_region_menu(lang: str) -> str:
+    """
+    Builds a paginated USSD menu of states from Neo4j.
+    USSD is 160 chars max — we show the first 8 states numbered.
+    For >8 states a production system would page; here we list the top 8
+    most agriculturally active states and append '0. More' for extensibility.
+    """
+    regions = _get_neo4j_regions()
+    # Trim to first 8 to stay within 160 chars
+    display = regions[:8]
+    header = get_localized_string(lang, "weather_region_menu")
+    lines = "\n".join(f"{i+1}. {r.title()}" for i, r in enumerate(display))
+    # Store the full list in a module-level cache so the handler can look up by index
+    _REGION_CACHE["list"] = regions
+    return f"{header}{lines}"
+
+
+# Module-level cache so region list is consistent across steps in one session
+_REGION_CACHE: dict = {"list": []}
+
+
+def _fetch_owm_weather(state_name: str) -> dict | None:
+    """
+    Calls OpenWeatherMap Current Weather + 5-day/3hr Forecast APIs.
+    Returns a unified dict or None on failure.
+    """
+    api_key = os.getenv("OWM_API_KEY")
+    if not api_key:
+        logging.error("[weather] OWM_API_KEY not set in environment.")
+        return None
+
+    city_query = NIGERIA_STATE_OWM.get(state_name.lower())
+    if not city_query:
+        # Graceful fallback: try state name directly
+        city_query = f"{state_name.title()},NG"
+
+    base = "https://api.openweathermap.org/data/2.5"
+    params = {"q": city_query, "appid": api_key, "units": "metric"}
+
+    try:
+        current_resp  = requests.get(f"{base}/weather",  params=params, timeout=10)
+        forecast_resp = requests.get(f"{base}/forecast", params=params, timeout=10)
+
+        if current_resp.status_code != 200:
+            logging.error(f"[weather] OWM current error {current_resp.status_code}: {current_resp.text}")
+            return None
+
+        current  = current_resp.json()
+        forecast = forecast_resp.json() if forecast_resp.status_code == 200 else {}
+
+        # Extract current conditions
+        weather_data = {
+            "state":       state_name.title(),
+            "city":        current.get("name", city_query),
+            "description": current["weather"][0]["description"].title() if current.get("weather") else "N/A",
+            "temp_c":      current["main"]["temp"],
+            "humidity":    current["main"]["humidity"],
+            "wind_kph":    round(current["wind"]["speed"] * 3.6, 1),
+            "rain_1h_mm":  current.get("rain", {}).get("1h", 0),
+        }
+
+        # Extract 7-day summary from 5-day/3hr forecast (OWM free tier)
+        if forecast.get("list"):
+            daily_temps = {}
+            daily_rain  = {}
+            for entry in forecast["list"]:
+                day = entry["dt_txt"][:10]
+                temp = entry["main"]["temp"]
+                rain = entry.get("rain", {}).get("3h", 0)
+                daily_temps.setdefault(day, []).append(temp)
+                daily_rain[day] = daily_rain.get(day, 0) + rain
+
+            forecast_summary = []
+            for day, temps in list(daily_temps.items())[:7]:
+                forecast_summary.append({
+                    "date":    day,
+                    "avg_c":   round(sum(temps) / len(temps), 1),
+                    "rain_mm": round(daily_rain.get(day, 0), 1),
+                })
+            weather_data["forecast_7d"] = forecast_summary
+        else:
+            weather_data["forecast_7d"] = []
+
+        return weather_data
+
+    except Exception as e:
+        logging.error(f"[weather] OWM request exception: {e}")
+        return None
+
+
+def _build_weather_ai_prompt(weather: dict, crop: str) -> str:
+    """
+    Constructs a structured prompt for the AI engine combining:
+    - Current conditions
+    - 7-day forecast
+    - Crop-specific planting calendar
+    - Pest/disease risk based on weather
+    """
+    current_block = (
+        f"Location: {weather['city']}, {weather['state']} State, Nigeria\n"
+        f"Current Weather: {weather['description']}, {weather['temp_c']}°C, "
+        f"Humidity {weather['humidity']}%, Wind {weather['wind_kph']} km/h, "
+        f"Rain last hour: {weather['rain_1h_mm']} mm\n"
+    )
+
+    forecast_block = ""
+    if weather.get("forecast_7d"):
+        forecast_block = "7-Day Forecast:\n"
+        for day in weather["forecast_7d"]:
+            forecast_block += f"  {day['date']}: avg {day['avg_c']}°C, rain {day['rain_mm']} mm\n"
+
+    prompt = (
+        f"You are an expert Nigerian agronomist. A farmer in {weather['state']} State "
+        f"is growing {crop.title()}. Use the weather data below to give practical, "
+        f"actionable advice covering ALL four areas:\n\n"
+        f"1. CURRENT CONDITIONS: What should the farmer do RIGHT NOW given today's weather?\n"
+        f"2. 7-DAY FORECAST: How should they plan their farm activities for the coming week?\n"
+        f"3. PLANTING CALENDAR: Is this a good time to plant/harvest {crop.title()} "
+        f"given the season and conditions? When is the next ideal window?\n"
+        f"4. PEST & DISEASE RISK: Based on the humidity ({weather['humidity']}%), "
+        f"temperature ({weather['temp_c']}°C), and rainfall, what pests or diseases "
+        f"are likely to attack {crop.title()} and how should the farmer prevent them?\n\n"
+        f"--- WEATHER DATA ---\n{current_block}{forecast_block}\n"
+        f"Keep advice concise and practical for a smallholder farmer. "
+        f"Use simple language suitable for SMS delivery."
+    )
+    return prompt
+
+
+def _run_weather_advice_worker(
+    phone_number: str,
+    phone_hash: str,
+    state_name: str,
+    crop: str,
+    lang: str,
+    coupon_code: str,
+) -> None:
+    """Background worker: fetch weather, generate AI advice, persist, and SMS farmer."""
+    try:
+        if not has_consented(phone_hash):
+            record_consent(phone_hash, True)
+
+        # 1. Fetch live weather from OpenWeatherMap
+        weather = _fetch_owm_weather(state_name)
+        if not weather:
+            fallback_msg = (
+                f"Could not fetch weather for {state_name.title()}. "
+                f"General tip: For {crop.title()}, ensure soil moisture is adequate "
+                f"and watch for signs of pests after any rain."
+            )
+            send_sms_reply(phone_number, fallback_msg)
+            store_advice(phone_hash, fallback_msg)
+            return
+
+        # 2. Build the combined prompt
+        question = _build_weather_ai_prompt(weather, crop)
+        context  = get_or_generate_context(crop, get_crop_context)
+
+        # 3. Get AI advice with 503 fault tolerance
+        try:
+            advice = get_advice(question, context, language_hint=lang, channel="sms")
+        except Exception as ai_err:
+            logging.error(f"[weather_worker] AI Engine error: {ai_err}")
+            advice = (
+                f"Agrion AI is busy. Weather in {weather['city']}: "
+                f"{weather['description']}, {weather['temp_c']}°C, "
+                f"Humidity {weather['humidity']}%. "
+                f"For {crop.title()}: check soil moisture and monitor for pests. "
+                f"Try again in 5 mins for full advice."
+            )
+
+        if not advice:
+            advice = f"No advice generated for {crop.title()} in {state_name.title()}. Please try again."
+
+        # 4. Log to knowledge graph
+        log_farmer_query(phone_hash, crop, f"weather_advisory:{state_name}", channel="ussd")
+
+        # 5. Send SMS and persist
+        send_sms_reply(phone_number, advice)
+        store_advice(phone_hash, advice)
+
+        # 6. Persist to Neo4j graph
+        try:
+            save_sms_token(coupon_code, advice, phone_number)
+            logging.info(f"[weather_worker] Graph pass confirmed for code {coupon_code}.")
+        except Exception as graph_err:
+            logging.error(f"[weather_worker] Graph persist failed safely: {graph_err}")
+
+        # 7. Persist to sms_outbox.json fallback
+        json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sms_outbox.json"))
+        outbox_data = {}
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    outbox_data = json.load(f)
+            except Exception:
+                outbox_data = {}
+
+        outbox_data[coupon_code] = {
+            "phone_hash": phone_hash,
+            "advice":     advice,
+            "type":       "weather_advisory",
+            "state":      state_name,
+            "crop":       crop,
+            "ts":         datetime.now().isoformat(),
+            "retrieved":  False,
+        }
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(outbox_data, f, indent=4)
+
+        logging.info(f"[weather_worker] Saved code {coupon_code} to outbox.")
+
+    except Exception as e:
+        logging.error(f"[weather_worker] Severe background exception: {e}")
+
+
+# ── CROP ADVISORY BACKGROUND WORKER (unchanged) ───────────────────────────────
+
 def _run_advice_and_sms_worker(
     phone_number: str,
     phone_hash: str,
@@ -219,13 +512,11 @@ def _run_advice_and_sms_worker(
             record_consent(phone_hash, True)
 
         context = get_or_generate_context(crop, get_crop_context)
-        
-        # ── FAULT TOLERANCE CAP: Catch 503 Capacity/Server Errors ──
+
         try:
             advice = get_advice(question, context, language_hint=lang, channel="sms")
         except Exception as ai_err:
             logging.error(f"[ussd_worker] AI Engine down (503/Timeout): {ai_err}")
-            # Dynamic fallback message to keep the pipeline moving
             advice = (
                 "Agrion AI is busy right now. We received your query about {} "
                 "and will update you shortly. Try again in 5 mins."
@@ -234,22 +525,18 @@ def _run_advice_and_sms_worker(
         if not advice:
             advice = f"Could not generate advice for {crop.title()}. Please describe the problem differently."
 
-        # Log and store metrics
         log_farmer_query(phone_hash, crop, question, channel="ussd")
         send_sms_reply(phone_number, advice)
         store_advice(phone_hash, advice)
 
-        # ── DIRECT RECONCILIATION TO PERSISTENT NEO4J GRAPH CLUSTER ──
         try:
             save_sms_token(coupon_code, advice, phone_number)
             logging.info(f"[ussd_worker] Persistent Graph Pass confirmed for code {coupon_code}.")
         except Exception as graph_err:
             logging.error(f"[ussd_worker] Graph pass intercept failed safely: {graph_err}")
 
-        # ── EXPLICIT SAVE TO SMS_OUTBOX.JSON FOR OLD COUPLING FALLBACKS ──
         json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sms_outbox.json"))
         outbox_data = {}
-        
         if os.path.exists(json_path):
             try:
                 with open(json_path, "r", encoding="utf-8") as f:
@@ -261,16 +548,18 @@ def _run_advice_and_sms_worker(
             "phone_hash": phone_hash,
             "advice":     advice,
             "ts":         datetime.now().isoformat(),
-            "retrieved":  False
+            "retrieved":  False,
         }
-
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(outbox_data, f, indent=4)
-            
+
         logging.info(f"[ussd_worker] Successfully auto-saved code {coupon_code} to system memory.")
 
     except Exception as e:
         logging.error(f"[ussd_worker] Severe background pipeline exception: {e}")
+
+
+# ── MAIN USSD ROUTE ───────────────────────────────────────────────────────────
 
 @ussd_bp.route("/ussd", methods=["POST"])
 def ussd_callback():
@@ -325,7 +614,6 @@ def ussd_callback():
 
         elif len(steps) == 4:
             sub_choice = steps[2]
-
             if sub_choice == "1":
                 try:
                     crop_idx = int(steps[3]) - 1
@@ -336,30 +624,24 @@ def ussd_callback():
                         response = get_localized_string(lang, "invalid")
                 except ValueError:
                     response = get_localized_string(lang, "invalid")
-
             elif sub_choice == "2":
                 crop     = steps[3].strip().lower()
                 response = get_localized_string(lang, "describe_problem_free").format(crop.title())
-
             else:
                 response = get_localized_string(lang, "invalid")
 
         elif len(steps) >= 5:
-            sub_choice = steps[2]
-            
-            # Generate the unique coupon code immediately in the parent stream
+            sub_choice  = steps[2]
             coupon_code = _generate_coupon_code()
 
             if sub_choice == "1":
                 try:
                     crop     = CROPS[int(steps[3]) - 1]
                     question = " ".join(steps[4:])
-                    
                     threading.Thread(
                         target=_run_advice_and_sms_worker,
                         args=(phone_number, phone_hash, crop, question, lang, coupon_code)
                     ).start()
-                    
                     response = get_localized_string(lang, "sms_sent") + coupon_code
                 except (ValueError, IndexError):
                     response = get_localized_string(lang, "invalid")
@@ -367,12 +649,10 @@ def ussd_callback():
             elif sub_choice == "2":
                 crop     = steps[3].strip().lower()
                 question = " ".join(steps[4:])
-                
                 threading.Thread(
                     target=_run_advice_and_sms_worker,
                     args=(phone_number, phone_hash, crop, question, lang, coupon_code)
-                    ).start()
-                
+                ).start()
                 response = get_localized_string(lang, "sms_sent") + coupon_code
 
             else:
@@ -381,9 +661,59 @@ def ussd_callback():
         else:
             response = get_localized_string(lang, "invalid")
 
-    # ── BRANCH 2: Weather ─────────────────────────────────────────────
+    # ── BRANCH 2: Weather Updates ─────────────────────────────────────
+    #
+    #  Flow:
+    #  steps[1] == "2"                → Show state list from Neo4j
+    #  steps[1,2] == "2", N           → Farmer picked state N; ask for crop
+    #  steps[1,2,3] == "2", N, crop   → Dispatch background worker; return code
+    #
     elif menu_choice == "2":
-        response = get_localized_string(lang, "weather_info")
+
+        if len(steps) == 2:
+            # Show region menu populated from Neo4j
+            response = _build_region_menu(lang)
+
+        elif len(steps) == 3:
+            # Farmer selected a state number; prompt for crop
+            try:
+                region_idx = int(steps[2]) - 1
+                regions    = _REGION_CACHE.get("list") or _get_neo4j_regions()
+                _REGION_CACHE["list"] = regions  # ensure cache is warm
+
+                if 0 <= region_idx < len(regions):
+                    # Store selected state in a per-step implicit encoding (via USSD text chain)
+                    response = get_localized_string(lang, "weather_crop_prompt")
+                else:
+                    response = get_localized_string(lang, "invalid")
+            except ValueError:
+                response = get_localized_string(lang, "invalid")
+
+        elif len(steps) >= 4:
+            # Farmer typed their crop; dispatch weather + AI worker
+            try:
+                region_idx = int(steps[2]) - 1
+                regions    = _REGION_CACHE.get("list") or _get_neo4j_regions()
+                _REGION_CACHE["list"] = regions
+
+                if 0 <= region_idx < len(regions):
+                    state_name  = regions[region_idx]
+                    crop        = " ".join(steps[3:]).strip().lower()
+                    coupon_code = _generate_coupon_code()
+
+                    threading.Thread(
+                        target=_run_weather_advice_worker,
+                        args=(phone_number, phone_hash, state_name, crop, lang, coupon_code)
+                    ).start()
+
+                    response = get_localized_string(lang, "weather_processing") + coupon_code
+                else:
+                    response = get_localized_string(lang, "invalid")
+            except (ValueError, IndexError):
+                response = get_localized_string(lang, "invalid")
+
+        else:
+            response = get_localized_string(lang, "invalid")
 
     # ── BRANCH 3: Market Prices ───────────────────────────────────────
     elif menu_choice == "3":
