@@ -19,7 +19,9 @@ import {
   LifeBuoy,
   Edit,
   Lock,
-  UserCog
+  UserCog,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface LandingProps {
@@ -31,6 +33,7 @@ interface LandingProps {
 export function LandingPage({ onNavigate, darkMode, toggleDarkMode }: LandingProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNDPAModal, setShowNDPAModal] = useState(false);
+  const [ussdStep, setUssdStep] = useState(0);
 
   const toggleTheme = () => {
     if (toggleDarkMode) {
@@ -101,6 +104,34 @@ export function LandingPage({ onNavigate, darkMode, toggleDarkMode }: LandingPro
       title: "Article 2 — Privacy by Design",
       description: "Technical and organizational measures are integrated from the initial development phase. Privacy is not an afterthought — it is built into every layer of the system."
     }
+  ];
+
+  const ussdFlowSteps = [
+    {
+      label: "1. Dial in",
+      screen: "CON Welcome to Agrion. Select Language:\n1. English\n2. Hausa\n3. Yoruba\n4. Igbo\n5. Pidgin",
+      caption: "Every session starts with a language choice, before anything else.",
+    },
+    {
+      label: "2. Main menu",
+      screen: "CON Choose an option:\n1. Crop Advisory\n2. Weather Updates\n3. Market Prices\n4. My Data & Privacy\n5. Voice Assistance",
+      caption: "Rendered in whichever language was picked in step 1.",
+    },
+    {
+      label: "3. Describe the problem",
+      screen: "CON Describe your Maize problem\n(e.g., yellow leaves, spots):",
+      caption: "Farmer picks a crop, then types their issue in free text.",
+    },
+    {
+      label: "4. AI + knowledge graph",
+      screen: "Checking knowledge graph for a cached answer…\nGenerating + translating with AI if it's a new question…",
+      caption: "A repeat question is an instant database lookup. A new one gets generated, translated, and saved for next time.",
+    },
+    {
+      label: "5. Answer arrives by SMS",
+      screen: "END Thank you! Your answer is on its way via SMS.",
+      caption: "The real advice goes out as an SMS, not squeezed into USSD's tiny character limit.",
+    },
   ];
 
   return (
@@ -285,6 +316,67 @@ export function LandingPage({ onNavigate, darkMode, toggleDarkMode }: LandingPro
               <p className="text-sm text-dallas dark:text-dark-text2 mt-1">{channel.description}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* USSD Flow Carousel */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-sand/20 dark:border-dark-border">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-thunder dark:text-dark-text">
+            How a USSD session <span className="text-marigold dark:text-dark-accent">actually flows.</span>
+          </h2>
+          <p className="mt-2 text-dallas dark:text-dark-text2">
+            No internet, no app — just a phone, a menu, and an SMS at the end.
+          </p>
+        </div>
+
+        <div className="max-w-xl mx-auto">
+          <div className="bg-cream dark:bg-dark-bg2 rounded-xl border border-sand/30 dark:border-dark-border p-6">
+            <p className="text-xs font-medium text-marigold dark:text-dark-accent mb-3">
+              {ussdFlowSteps[ussdStep].label}
+            </p>
+
+            <div className="rounded-lg bg-thunder dark:bg-dark-surface p-4 font-mono text-sm text-[#7fdb9a] whitespace-pre-wrap min-h-[90px]">
+              {ussdFlowSteps[ussdStep].screen}
+            </div>
+
+            <p className="mt-4 text-sm text-dallas dark:text-dark-text2 leading-relaxed">
+              {ussdFlowSteps[ussdStep].caption}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={() => setUssdStep((s) => Math.max(0, s - 1))}
+              disabled={ussdStep === 0}
+              className="p-2 rounded-lg border border-sand/30 dark:border-dark-border hover:bg-cream dark:hover:bg-dark-bg2 disabled:opacity-30 transition-colors"
+              aria-label="Previous step"
+            >
+              <ChevronLeft className="w-4 h-4 text-thunder dark:text-dark-text" />
+            </button>
+
+            <div className="flex gap-2">
+              {ussdFlowSteps.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setUssdStep(i)}
+                  aria-label={`Go to step ${i + 1}`}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    i === ussdStep ? "bg-marigold dark:bg-dark-accent" : "bg-sand/40 dark:bg-dark-border"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() => setUssdStep((s) => Math.min(ussdFlowSteps.length - 1, s + 1))}
+              disabled={ussdStep === ussdFlowSteps.length - 1}
+              className="p-2 rounded-lg border border-sand/30 dark:border-dark-border hover:bg-cream dark:hover:bg-dark-bg2 disabled:opacity-30 transition-colors"
+              aria-label="Next step"
+            >
+              <ChevronRight className="w-4 h-4 text-thunder dark:text-dark-text" />
+            </button>
+          </div>
         </div>
       </section>
 
