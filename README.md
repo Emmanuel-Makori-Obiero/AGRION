@@ -1,11 +1,10 @@
 # AgriConnect Nigeria
 
-
 A USSD and IVR farming advisory service for Nigerian smallholder farmers.
 Advisory content lives in a **Neo4j knowledge graph** (sourced from IITA guides
 and NiMet forecasts), is translated to local languages via **Featherless**, and
 rendered to voice via **ElevenLabs** — all reachable from any basic phone over
-**Africa's Talking**.
+**Africa's Talking**.                    
 
 ## Architecture
 
